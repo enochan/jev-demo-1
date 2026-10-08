@@ -31,3 +31,12 @@ python demo/server.py              # → http://localhost:8000
 4. **質問定義の編集**：画面下部の JSON を書き換えて再実行すると、学習なしで判定項目を増やせる。Python SDK で書いた場合のコードも表示する
 
 シナリオ・質問・ダミーデータを変えるときは `demo/scenarios.json` を編集する。
+
+## テスト
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+JEV_OFFLINE=1 python -m pytest -q
+```
+
+API キーは不要（モックで動く）。`scenarios.json` の構造、モック応答が SDK のレスポンス型と `expect` に合うこと、HTTP API を確認する。node があれば `index.html` の script の構文もチェックする。push / PR ごとに GitHub Actions（`.github/workflows/ci.yml`）で Python 3.10 / 3.13 で実行される。
