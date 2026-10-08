@@ -27,6 +27,7 @@
   table { border-collapse:collapse; width:100%; font-size:21px; }
   th, td { border-bottom:1px solid var(--line); padding:10px 12px; text-align:left; }
   th { color:var(--sub); font-weight:600; font-size:17px; }
+  td:first-child { white-space:nowrap; }
   .foot { position:absolute; bottom:22px; right:36px; font-size:14px; color:var(--sub); }
   .tag { display:inline-block; font-size:16px; padding:2px 12px; border-radius:99px; border:1px solid var(--accent); color:var(--accent); margin-right:8px; }
   .center { justify-content:center; }
@@ -50,7 +51,7 @@
   <table>
     <tr><th>時間</th><th>内容</th></tr>
     <tr><td>7分</td><td>Jevとは何か／社内で出ている話（LLMとの違い、3つの質問型、確率の扱い）</td></tr>
-    <tr><td>8分</td><td>デモ：支援記録チェック／問い合わせトリアージ／AIチャットのガードレール</td></tr>
+    <tr><td>8分</td><td>デモ：支援記録チェック／問い合わせトリアージ／AIチャットのガードレール／ランキング・リアルタイム判定・構造化データ</td></tr>
     <tr><td>5分</td><td>作ったことがある人のデモ</td></tr>
     <tr><td>30分</td><td>ブレスト：事業・プロダクト・サービスの中の「判断」を棚卸しする</td></tr>
   </table>
@@ -70,22 +71,21 @@
 </section>
 
 <section class="s">
-  <h2>社内でももう話題になっている（公開チャンネル・9/16〜19）</h2>
+  <h2>社内でも関心が高まっている</h2>
   <div class="grid g2">
     <div>
       <ul>
-        <li>9/16 公式ブログが共有される → 9/18 には「はてブがJevだらけ」</li>
-        <li>まず個人timesと事業部チャンネルで広がった（横断のAIチャンネルにはまだあまり出てこない）</li>
+        <li>公開直後から、社内のエンジニアを中心に情報共有が進んでいる</li>
         <li>共通した理解：<b>「判断するAI」</b>「速い・安い」「巨大なSwitch文」</li>
-        <li>ウェイトリストは1日ほどで通過したという報告。OpenRouter・Cloudflare からも使える</li>
+        <li>公式のウェイトリストのほか、OpenRouter・Cloudflare からも利用できる</li>
       </ul>
     </div>
     <div class="card">
       <h3>すでに出ている当てはめ先</h3>
       <ul>
-        <li><b>IEP</b>：教材推薦の「良さそう判定」、手立て・見立ての関連性、ガードレール、QAの LLM-as-a-Judge</li>
-        <li><b>仕事ナビ</b>：Haiku で前後チェックしている自前ガードレール（前後 1秒ずつ）の置き換え</li>
-        <li><b>スナビジョン</b>：求職者 × 求人の即時ランキング</li>
+        <li><b>支援計画・教材</b>：教材推薦の適合判定、支援内容の関連性判定、QAでの評価判定</li>
+        <li><b>AIチャット</b>：LLMで行っている入出力チェック（ガードレール）の置き換え</li>
+        <li><b>求人マッチング</b>：求職者 × 求人の即時ランキング</li>
       </ul>
     </div>
   </div>
@@ -187,14 +187,35 @@
       </ul>
     </div>
     <div class="card">
-      <h3>仕事ナビの事例を題材に</h3>
+      <h3>想定する構成</h3>
       <ul>
-        <li>現在：Haiku で前後チェック → <b>前後 1秒ずつ</b></li>
-        <li>Jev：4種類のチェックを<b>1回の呼び出しで、数百ms</b>で処理</li>
-        <li>回答生成と安全ガードを分ける構成（IEPでも出た案）</li>
+        <li>LLMによる入出力チェックは、<b>前後それぞれ秒単位</b>の待ち時間が発生しやすい</li>
+        <li>Jev：4種類のチェックを<b>1回の呼び出し</b>で処理</li>
+        <li>回答生成と安全ガードを分ける構成</li>
         <li>「消えてしまいたい」のような<b>遠回しな表現</b>を拾えるか？ → しきい値をどこに設定するか？</li>
       </ul>
     </div>
+  </div>
+</section>
+
+<section class="s">
+  <h2>デモ④〜⑦ 判断の型を広げる <span class="tag">応用</span></h2>
+  <div class="grid g2">
+    <div class="card"><h3>④⑤ ランキング</h3><ul>
+      <li>求職者 × 求人10件、子どもの支援目標 × 教材10件</li>
+      <li>候補ごとに Noul を1問ずつ作成し、<b>10問を1回の呼び出し</b>で判定して確率順に並べる</li>
+      <li>プロフィールを切り替えると順位が入れ替わる（▲▼で変動を表示）</li></ul></div>
+    <div class="card"><h3>⑥ リアルタイム判定</h3><ul>
+      <li>就労定着支援の面談メモを、<b>入力が止まるたびに再判定</b></li>
+      <li>会話が進むにつれて、体調・業務量・人間関係・合理的配慮のネックが順に点灯</li>
+      <li>応答速度が前提となるユースケース</li></ul></div>
+    <div class="card"><h3>⑦ 構造化データ</h3><ul>
+      <li>就労移行支援の日報10日分を<b>JSONのまま state に渡す</b></li>
+      <li>通所中断のリスクと、今週中の個別面談の要否を判定</li>
+      <li>文章だけでなく、記録システムのデータも判定対象になる</li></ul></div>
+    <div class="card"><h3>確認ポイント</h3><ul>
+      <li>学習なしで、<b>質問の定義を変えるだけ</b>で用途が変わる</li>
+      <li>1件×多問（①〜③）、多候補×1問（④⑤）、連続入力（⑥）、JSON入力（⑦）</li></ul></div>
   </div>
 </section>
 
@@ -289,16 +310,19 @@
 
 <section class="s">
   <h2>Appendix：デモの動かし方</h2>
-<pre><code>git clone … &amp;&amp; cd jev-demo-1
-pip install -r requirements.txt
-export TYPESAFE_API_KEY=...            <span class="c"># console.typesafe.ai で発行</span>
-python demo/server.py                  <span class="c"># → http://localhost:8000</span>
+<pre><code><span class="c"># Windows PowerShell（&amp;&amp; は使えないため1行ずつ実行）</span>
+git clone https://github.com/enochan/jev-demo-1
+cd jev-demo-1
+py -m pip install -r requirements.txt
+$env:TYPESAFE_API_KEY = "..."           <span class="c"># console.typesafe.ai で発行</span>
+py demo\server.py                       <span class="c"># → http://localhost:8000（mode=LIVE と表示）</span>
 
-<span class="c"># キーがない／会場のネットワークが不安定な場合</span>
-<span class="c">#  - 一度 LIVE で実行した結果は demo/cache/ に保存され、キーなしでもそのまま再生される</span>
-<span class="c">#  - キャッシュもない場合はモックで動く（画面に mock と表示される）</span>
-JEV_OFFLINE=1 python demo/server.py    <span class="c"># 強制的にオフライン</span></code></pre>
-  <p class="sub" style="font-size:18px;margin-top:16px">質問定義：demo/scenarios.json ／ サーバー：demo/server.py（標準ライブラリ + typesafe-sdk）<br>自分で試すなら：scenarios.json にシナリオを1つ足すと、画面にタブが増える</p>
+<span class="c"># 他の人に共有する（Cloudflare Tunnel、アカウント不要）</span>
+$env:DEMO_PASSWORD = "合言葉"           <span class="c"># 公開時は必須。Basic 認証がかかる</span>
+cloudflared tunnel --url http://localhost:8000   <span class="c"># 別タブで実行 → https://xxxx.trycloudflare.com</span>
+
+<span class="c"># キーなし・ネットワーク不調時：LIVE の結果は demo/cache/ から再生、なければ mock で動作</span></code></pre>
+  <p class="sub" style="font-size:18px;margin-top:16px">質問定義：demo/scenarios.json ／ サーバー：demo/server.py（標準ライブラリ + typesafe-sdk）<br>自分で試すなら：scenarios.json にシナリオを1つ追加すると、画面にタブが増える（macOS / Linux は export・python3 に読み替え）</p>
 </section>
 
 </div>
