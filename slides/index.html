@@ -30,6 +30,11 @@
   .foot { position:absolute; bottom:22px; right:36px; font-size:14px; color:var(--sub); }
   .tag { display:inline-block; font-size:16px; padding:2px 12px; border-radius:99px; border:1px solid var(--accent); color:var(--accent); margin-right:8px; }
   .center { justify-content:center; }
+  ul.nested > li { margin-top:10px; font-size:24px; }
+  ul.nested ul { margin-top:2px; padding-left:1.4em; list-style:circle; }
+  ul.nested ul li { font-size:20px; margin:2px 0; }
+  a { color:var(--accent); text-decoration:none; border-bottom:1px solid rgba(108,155,255,.4); }
+  a:hover { border-bottom-color:var(--accent); }
 </style>
 </head>
 <body>
@@ -37,19 +42,17 @@
 
 <section class="s center">
   <div class="sub" style="font-size:22px">勉強会 · 2026-10-08</div>
-  <h1>Jev を触ってみる<br><span class="accent">「判断するAI」</span>は障害福祉の現場で何に使えるか</h1>
-  <p class="sub">Jevとは → デモ → ブレスト</p>
+  <h1 style="font-size:46px">Jev を触ってみる<br><span class="accent">「判断するAI」</span>は障害福祉の現場で何に使えるか</h1>
 </section>
 
 <section class="s">
-  <h2>今日の流れ（30分 ＋ 希望者はハッカソン）</h2>
+  <h2>今日の流れ（50分）</h2>
   <table>
     <tr><th>時間</th><th>内容</th></tr>
     <tr><td>7分</td><td>Jevとは何か／社内で出ている話（LLMとの違い、3つの質問型、確率の扱い）</td></tr>
     <tr><td>8分</td><td>デモ：支援記録チェック／問い合わせトリアージ／AIチャットのガードレール</td></tr>
     <tr><td>5分</td><td>作ったことがある人のデモ</td></tr>
-    <tr><td>10分</td><td>ブレスト：自分の業務の「判断」を棚卸しする</td></tr>
-    <tr><td class="sub">+30〜60分</td><td class="sub">希望者でハッカソン（デモの質問JSONをいじる／自分のプロダクトに当てはめる）</td></tr>
+    <tr><td>30分</td><td>ブレスト：事業・プロダクト・サービスの中の「判断」を棚卸しする</td></tr>
   </table>
   <p class="sub" style="margin-top:24px">着想元：LayerX テックブログ（2026/09/18）<br>https://tech.layerx.co.jp/entry/2026/09/18/185816</p>
 </section>
@@ -113,28 +116,6 @@
 </section>
 
 <section class="s">
-  <h2>コードはこれだけ（Python SDK: typesafe-sdk）</h2>
-<pre><code><span class="k">from</span> typesafe_sdk <span class="k">import</span> Choice, Noul, Score, TypeSafeClient
-
-<span class="k">with</span> TypeSafeClient() <span class="k">as</span> client:            <span class="c"># TYPESAFE_API_KEY を読む / モデル既定値は jev-latest</span>
-    res = client.system_one(
-        state={<span class="str">"支援記録"</span>: text, <span class="str">"事業所種別"</span>: <span class="str">"放課後等デイサービス"</span>},
-        questions={
-            <span class="str">"domain"</span>:   Choice(instructions=<span class="str">"5領域のどれに関係？"</span>,
-                              criteria={<span class="str">"健康・生活"</span>: <span class="str">"…"</span>, <span class="str">"運動・感覚"</span>: <span class="str">"…"</span>, ...}),
-            <span class="str">"incident"</span>: Noul(instructions=<span class="str">"事故・ヒヤリハットの記載がある？"</span>),
-            <span class="str">"condition"</span>: Score(instructions=<span class="str">"本人の状態は？"</span>,
-                              criteria=[<span class="str">"安定"</span>, <span class="str">"やや不安定"</span>, <span class="str">"個別対応が必要"</span>, <span class="str">"強い不調"</span>]),
-        },
-    )
-
-res.choices[<span class="str">"domain"</span>].choice, res.choices[<span class="str">"domain"</span>].confidence
-res.nouls[<span class="str">"incident"</span>].noul         <span class="c"># 0.95 → if 文にそのまま使える</span>
-res.scores[<span class="str">"condition"</span>].score      <span class="c"># 確率で重み付けした期待値（例：1.7）</span></code></pre>
-  <p class="sub" style="font-size:17px;margin-top:10px">REST：POST https://api.typesafe.ai/v1/systemone（Bearer認証）／ 非同期クライアント AsyncTypeSafeClient あり</p>
-</section>
-
-<section class="s center">
   <h2>本当にうれしいのは「確率」</h2>
   <p class="big">AIに<span class="ok">任せる範囲</span>を、<br>しきい値という<span class="accent">つまみ1つ</span>で決められる</p>
   <ul style="margin-top:22px">
@@ -230,30 +211,38 @@ res.scores[<span class="str">"condition"</span>].score      <span class="c"># �
 
 <section class="s">
   <h2>障害福祉で使うときの注意</h2>
-  <div class="grid g2">
-    <div class="card"><h3 class="warn">データ</h3><ul>
-      <li>支援記録は<b>要配慮個人情報</b>の塊。外部API（米国企業）に送る前提で、同意・匿名化・契約・データ保持を確認する</li>
-      <li>今日のデモは<b>すべてダミー</b></li></ul></div>
-    <div class="card"><h3 class="warn">判断の責任</h3><ul>
-      <li>虐待の疑い・事故報告は<b>法令上の義務</b>。AIは「見落とさないための補助」であって、判定はしない</li>
-      <li>見逃しと過検知はコストが<b>非対称</b> → しきい値は安全側に</li></ul></div>
-    <div class="card"><h3>精度</h3><ul>
-      <li>確率がどれだけ当たっているかは<b>自分たちのデータで検証</b>してから使う</li>
-      <li>正解ラベル付きのサンプルを少数でも作るのが第一歩</li></ul></div>
-    <div class="card"><h3>現場の受け止め</h3><ul>
-      <li>「AIに見張られている」ではなく<br>「書いた記録が誰かに届く」体験として設計する</li></ul></div>
-  </div>
+  <ul class="nested">
+    <li><b class="warn">データ</b>
+      <ul>
+        <li>支援記録は<b>要配慮個人情報</b>の塊。外部API（米国企業）に送る前提で、同意・匿名化・契約・データ保持を確認する</li>
+        <li>今日のデモは<b>すべてダミー</b></li>
+      </ul></li>
+    <li><b class="warn">判断の責任</b>
+      <ul>
+        <li>虐待の疑い・事故報告は<b>法令上の義務</b>。AIは「見落とさないための補助」であって、判定はしない</li>
+        <li>見逃しと過検知はコストが<b>非対称</b> → しきい値は安全側に</li>
+      </ul></li>
+    <li><b>精度</b>
+      <ul>
+        <li>確率がどれだけ当たっているかは<b>自分たちのデータで検証</b>してから使う</li>
+        <li>正解ラベル付きのサンプルを少数でも作るのが第一歩</li>
+      </ul></li>
+    <li><b>現場の受け止め</b>
+      <ul>
+        <li>「AIに見張られている」ではなく「書いた記録が誰かに届く」体験として設計する</li>
+      </ul></li>
+  </ul>
 </section>
 
 <section class="s">
   <h2>ブレスト：判断を棚卸しする</h2>
-  <p class="big" style="font-size:32px">あなたの業務で、<br><span class="accent">選ぶ / 点をつける / Yes・Noを決める</span> を<br>毎日たくさんやっているのはどこ？</p>
+  <p class="big" style="font-size:32px">私たちの事業・プロダクト・サービスの中で、<br><span class="accent">選ぶ / 点をつける / Yes・Noを決める</span> が<br>たくさん起きているのはどこ？</p>
   <div class="grid g3" style="margin-top:24px">
-    <div class="card"><h3>① 件数</h3><p>1日・1か月で何件？<br>誰が何分かけている？</p></div>
+    <div class="card"><h3>① 件数</h3><p>1日・1か月で何回起きる？<br>いま誰が（人・仕組み）判断している？</p></div>
     <div class="card"><h3>② 間違えたときのコスト</h3><p>見逃すと何が起きる？<br>過検知だと何が起きる？</p></div>
     <div class="card"><h3>③ 判断材料</h3><p>テキスト／フォームとして<br>すでにデータになっている？</p></div>
   </div>
-  <p class="sub" style="font-size:20px;margin-top:16px">件数が多く、データがあり、AIを外したときのコストが許容できるもの → まず試す候補</p>
+  <p class="sub" style="font-size:20px;margin-top:16px">観点の例：利用者・家族の体験／支援の質／現場の業務負荷／事業の運営・収益／プロダクトの機能・開発<br>件数が多く、データがあり、外したときのコストが許容できるもの → まず試す候補</p>
 </section>
 
 <section class="s">
@@ -282,17 +271,18 @@ res.scores[<span class="str">"condition"</span>].score      <span class="c"># �
   <h2>Appendix：試し方と参考資料</h2>
   <div class="grid g2">
     <div class="card"><h3>試せる経路</h3><ul>
-      <li>TypeSafe 公式：console.typesafe.ai（ウェイトリスト → API キー）<br><span class="sub">SDK：pip install typesafe-sdk</span></li>
-      <li>OpenRouter：typesafe/jev-latest</li>
-      <li>Cloudflare Workers AI / AI Gateway</li>
-      <li>TypeSafe Discord（show &amp; tell が活発）</li>
+      <li>TypeSafe 公式：<a href="https://console.typesafe.ai/" target="_blank" rel="noopener">console.typesafe.ai</a>（ウェイトリスト → API キー）<br><span class="sub">SDK：<a href="https://pypi.org/project/typesafe-sdk/" target="_blank" rel="noopener">pip install typesafe-sdk</a></span></li>
+      <li>OpenRouter：<a href="https://openrouter.ai/~typesafe/jev-latest" target="_blank" rel="noopener">typesafe/jev-latest</a></li>
+      <li><a href="https://developers.cloudflare.com/ai/models/typesafe/jev/" target="_blank" rel="noopener">Cloudflare Workers AI / AI Gateway</a></li>
+      <li>TypeSafe Discord（show &amp; tell が活発。<a href="https://typesafe.ai/" target="_blank" rel="noopener">公式サイト</a>から参加）</li>
     </ul></div>
     <div class="card"><h3>参考資料</h3><ul style="font-size:17px">
-      <li>公式：Introducing System One Models and Jev</li>
-      <li>公式 docs：Use-case map</li>
-      <li>note（npaka）：高速な判断に特化したAI</li>
-      <li>Speaker Deck（minorun365）：Jev 宇宙最速で学ぶ会</li>
-      <li>LayerX テックブログ（2026/09/18）</li>
+      <li>公式：<a href="https://typesafe.ai/blog/introducing-system-one-models-and-jev" target="_blank" rel="noopener">Introducing System One Models and Jev</a></li>
+      <li>公式 docs：<a href="https://docs.typesafe.ai/concepts/use-case-map" target="_blank" rel="noopener">Use-case map</a></li>
+      <li>note（npaka）：<a href="https://note.com/npaka/n/n6f8dd30a5fa4" target="_blank" rel="noopener">高速な判断に特化したAI</a></li>
+      <li>Speaker Deck（minorun365）：<a href="https://speakerdeck.com/minorun365/konwadai-no-ai-jev-tte-nani-uchuu-saisoku-de-manabu-kai" target="_blank" rel="noopener">Jev 宇宙最速で学ぶ会</a></li>
+      <li><a href="https://tech.layerx.co.jp/entry/2026/09/18/185816" target="_blank" rel="noopener">LayerX テックブログ（2026/09/18）</a></li>
+      <li>もっと読む：<a href="https://github.com/enochan/jev-demo-1/blob/main/docs/jev-reading-list.md" target="_blank" rel="noopener">リーディングリスト（40件）</a></li>
     </ul></div>
   </div>
 </section>
@@ -308,7 +298,7 @@ python demo/server.py                  <span class="c"># → http://localhost:80
 <span class="c">#  - 一度 LIVE で実行した結果は demo/cache/ に保存され、キーなしでもそのまま再生される</span>
 <span class="c">#  - キャッシュもない場合はモックで動く（画面に mock と表示される）</span>
 JEV_OFFLINE=1 python demo/server.py    <span class="c"># 強制的にオフライン</span></code></pre>
-  <p class="sub" style="font-size:18px;margin-top:16px">質問定義：demo/scenarios.json ／ サーバー：demo/server.py（標準ライブラリ + typesafe-sdk）<br>ハッカソン：scenarios.json にシナリオを1つ足すと、画面にタブが増える</p>
+  <p class="sub" style="font-size:18px;margin-top:16px">質問定義：demo/scenarios.json ／ サーバー：demo/server.py（標準ライブラリ + typesafe-sdk）<br>自分で試すなら：scenarios.json にシナリオを1つ足すと、画面にタブが増える</p>
 </section>
 
 </div>
@@ -332,7 +322,7 @@ addEventListener("keydown", (e) => {
   else return;
   e.preventDefault(); show();
 });
-addEventListener("click", (e) => { i = e.clientX > innerWidth / 3 ? Math.min(slides.length - 1, i + 1) : Math.max(0, i - 1); show(); });
+addEventListener("click", (e) => { if (e.target.closest("a")) return; i = e.clientX > innerWidth / 3 ? Math.min(slides.length - 1, i + 1) : Math.max(0, i - 1); show(); });
 addEventListener("resize", fit);
 fit(); show();
 </script>
