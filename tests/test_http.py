@@ -92,3 +92,29 @@ def test_index_script_parses(tmp_path):
     path.write_text("\n".join(scripts), encoding="utf-8")
     proc = subprocess.run([node, "--check", str(path)], capture_output=True, text=True)
     assert proc.returncode == 0, proc.stderr
+
+
+def test_password_required_when_set(base_url, monkeypatch):
+    monkeypatch.setenv("DEMO_PASSWORD", "secret")
+    import base64
+
+    def get(auth: str | None) -> int:
+        req = urllib.request.Request(base_url + "/api/config")
+        if auth:
+            req.add_header("Authorization", "Basic " + base64.b64encode(auth.encode()).decode())
+        try:
+            with urllib.request.urlopen(req, timeout=10) as res:
+                return res.status
+        except urllib.error.HTTPError as error:
+            return error.code
+
+    assert get(None) == 401
+    assert get("anyone:wrong") == 401
+    assert get("anyone:secret") == 200
+
+    try:
+        urllib.request.urlopen(urllib.request.Request(base_url + "/api/judge", data=b"{}"), timeout=10)
+        post_status = 200
+    except urllib.error.HTTPError as error:
+        post_status = error.code
+    assert post_status == 401
