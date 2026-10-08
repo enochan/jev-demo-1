@@ -27,6 +27,7 @@
   table { border-collapse:collapse; width:100%; font-size:21px; }
   th, td { border-bottom:1px solid var(--line); padding:10px 12px; text-align:left; }
   th { color:var(--sub); font-weight:600; font-size:17px; }
+  td:first-child { white-space:nowrap; }
   .foot { position:absolute; bottom:22px; right:36px; font-size:14px; color:var(--sub); }
   .tag { display:inline-block; font-size:16px; padding:2px 12px; border-radius:99px; border:1px solid var(--accent); color:var(--accent); margin-right:8px; }
   .center { justify-content:center; }
@@ -50,7 +51,7 @@
   <table>
     <tr><th>時間</th><th>内容</th></tr>
     <tr><td>7分</td><td>Jevとは何か／社内で出ている話（LLMとの違い、3つの質問型、確率の扱い）</td></tr>
-    <tr><td>8分</td><td>デモ：支援記録チェック／問い合わせトリアージ／AIチャットのガードレール</td></tr>
+    <tr><td>8分</td><td>デモ：支援記録チェック／問い合わせトリアージ／AIチャットのガードレール／ランキング・リアルタイム判定・構造化データ</td></tr>
     <tr><td>5分</td><td>作ったことがある人のデモ</td></tr>
     <tr><td>30分</td><td>ブレスト：事業・プロダクト・サービスの中の「判断」を棚卸しする</td></tr>
   </table>
@@ -59,33 +60,32 @@
 
 <section class="s">
   <h2>Jevとは</h2>
-  <p class="big">文章を書かない。<span class="accent">判断だけ</span>を返すモデル。</p>
+  <p class="big">文章を書かず、<span class="accent">判断だけ</span>を返すモデル。</p>
   <ul style="margin-top:18px">
     <li>TypeSafe AI が 2026/09/15 に公開した <b>decision model（判断モデル）</b>。同社は「System One」モデルと呼んでいる</li>
     <li>入力は <b>state</b>（テキストでもJSONでもよい）と、名前付きの <b>型付きの質問</b>の集合</li>
-    <li>全部の質問に <b>1回の呼び出しで並列に</b>答え、すべての答えに <b>確率</b>が付く</li>
+    <li>すべての質問に <b>1回の呼び出しで並列に</b>回答し、各回答に <b>確率</b>が付く</li>
     <li>公表値：<b>70–500ms</b>、入力 <b>$0.042 / 1Mトークン</b>、<b>出力は無料</b></li>
   </ul>
-  <p class="sub" style="font-size:18px;margin-top:auto">※ 性能・価格はベンダー公表値。独立したベンチマークはまだ少ない</p>
+  <p class="sub" style="font-size:18px;margin-top:auto">※ 性能・価格はベンダー公表値。第三者によるベンチマークはまだ少ない</p>
 </section>
 
 <section class="s">
-  <h2>社内でももう話題になっている（公開チャンネル・9/16〜19）</h2>
+  <h2>社内でも関心が高まっている</h2>
   <div class="grid g2">
     <div>
       <ul>
-        <li>9/16 公式ブログが共有される → 9/18 には「はてブがJevだらけ」</li>
-        <li>まず個人timesと事業部チャンネルで広がった（横断のAIチャンネルにはまだあまり出てこない）</li>
+        <li>公開直後から、社内のエンジニアを中心に情報共有が進んでいる</li>
         <li>共通した理解：<b>「判断するAI」</b>「速い・安い」「巨大なSwitch文」</li>
-        <li>ウェイトリストは1日ほどで通過したという報告。OpenRouter・Cloudflare からも使える</li>
+        <li>公式のウェイトリストのほか、OpenRouter・Cloudflare からも利用できる</li>
       </ul>
     </div>
     <div class="card">
       <h3>すでに出ている当てはめ先</h3>
       <ul>
-        <li><b>IEP</b>：教材推薦の「良さそう判定」、手立て・見立ての関連性、ガードレール、QAの LLM-as-a-Judge</li>
-        <li><b>仕事ナビ</b>：Haiku で前後チェックしている自前ガードレール（前後 1秒ずつ）の置き換え</li>
-        <li><b>スナビジョン</b>：求職者 × 求人の即時ランキング</li>
+        <li><b>支援計画・教材</b>：教材推薦の適合判定、支援内容の関連性判定、QAでの評価判定</li>
+        <li><b>AIチャット</b>：LLMで行っている入出力チェック（ガードレール）の置き換え</li>
+        <li><b>求人マッチング</b>：求職者 × 求人の即時ランキング</li>
       </ul>
     </div>
   </div>
@@ -96,31 +96,31 @@
   <h2>LLM と何が違うか</h2>
   <table>
     <tr><th></th><th>LLM（Claude / GPT など）</th><th>Jev</th></tr>
-    <tr><td>出力</td><td>自由文。JSON形式は「お願い」して出してもらう</td><td class="accent">型付きの答えのみ（選択肢・スコア・Yes確率）</td></tr>
+    <tr><td>出力</td><td>自由文。JSON形式はプロンプトで明示的に指定して出力させる</td><td class="accent">型付きの答えのみ（選択肢・スコア・Yes確率）</td></tr>
     <tr><td>信頼度</td><td>自己申告の「自信」は当てにならない</td><td class="accent">確率が出る。確率が当たるように学習（RLCD）</td></tr>
     <tr><td>複数の判断</td><td>プロンプトを分ける／まとめて出させる</td><td class="accent">N問を1回の呼び出しで並列に処理</td></tr>
     <tr><td>速度・コスト</td><td>秒単位・出力課金</td><td class="accent">数百ms・出力無料</td></tr>
     <tr><td>得意</td><td>生成・要約・推論・対話</td><td class="accent">分類・ルーティング・採点・ゲート判定</td></tr>
   </table>
-  <p style="margin-top:22px">→ 置き換えではなく<b>役割分担</b>。「if文の条件をAIに書いてもらう」イメージ</p>
+  <p style="margin-top:22px">→ 置き換えではなく<b>役割分担</b>。「if文の条件判定をAIに任せる」イメージ</p>
 </section>
 
 <section class="s">
   <h2>3つの質問型</h2>
   <div class="grid g3">
     <div class="card"><h3 class="accent">Choice</h3><p>候補から1つ選ぶ</p><p class="sub">→ choice / confidence / 各候補の probabilities</p><p>例：5領域のどれ？　どの担当に回す？</p></div>
-    <div class="card"><h3 class="accent">Score</h3><p>順序付きの段階（ルーブリック）で採点</p><p class="sub">→ 期待スコア（小数）/ confidence / 段階ごとの確率</p><p>例：本人の状態 0〜3、記録の具体性</p></div>
+    <div class="card"><h3 class="accent">Score</h3><p>順序付きの段階（ルーブリック）で採点</p><p class="sub">→ 期待スコア（小数）/ confidence / 段階ごとの確率</p><p>例：利用者の状態 0〜3、記録の具体性</p></div>
     <div class="card"><h3 class="accent">Noul</h3><p>Yes/No の確率</p><p class="sub">→ noul = p(yes)（0〜1）</p><p>例：ヒヤリハットに該当？　苦情を含む？</p></div>
   </div>
-  <p style="margin-top:26px">instructions / criteria は <b>文字列でもJSONでも書ける</b>。学習データは不要で、<b>質問を書き足すだけで判断項目が増える</b></p>
+  <p style="margin-top:26px">instructions / criteria は <b>文字列でもJSONでも書ける</b>。学習データは不要で、<b>質問を書き足すだけで判断項目を増やせる</b></p>
 </section>
 
 <section class="s">
-  <h2>本当にうれしいのは「確率」</h2>
-  <p class="big">AIに<span class="ok">任せる範囲</span>を、<br>しきい値という<span class="accent">つまみ1つ</span>で決められる</p>
+  <h2>判断に「確率」が付く利点</h2>
+  <p class="big">AIに<span class="ok">任せる範囲</span>を、<br>しきい値という<span class="accent">パラメータ1つ</span>で調整できる</p>
   <ul style="margin-top:22px">
-    <li>確率が高いものは自動で処理し、迷っているものだけ人が見る（human-in-the-loop を設計できる）</li>
-    <li>「見逃しを0にしたい」「人の確認件数を半分にしたい」を<b>数字で</b>話せる</li>
+    <li>確率が高いものは自動で処理し、判断が分かれるものだけ人が確認する（human-in-the-loop を設計できる）</li>
+    <li>「見逃しを0にしたい」「人の確認件数を半分にしたい」を<b>数字で</b>検討できる</li>
     <li>LLMでは「たぶん合ってる」を定量化しにくかった</li>
   </ul>
 </section>
@@ -129,22 +129,22 @@
   <h2>デモ① 支援記録チェック <span class="tag">支援系</span></h2>
   <div class="grid g2">
     <div>
-      <p>放課後等デイサービスの日々の支援記録（<b>ダミー16件</b>）に、<b>6問</b>を1回で投げる</p>
+      <p>放課後等デイサービスの日々の支援記録（<b>ダミー16件</b>）に、<b>6問</b>を1回で送る</p>
       <ul>
         <li>5領域の分類（Choice）</li>
         <li>事故・ヒヤリハット（Noul）</li>
         <li>虐待のサイン／権利擁護の観点（Noul）</li>
         <li>保護者への共有事項（Noul）</li>
-        <li>本人の状態・記録の具体性（Score）</li>
+        <li>利用者の状態・記録の具体性（Score）</li>
       </ul>
     </div>
     <div class="card">
-      <h3>見てほしいところ</h3>
+      <h3>確認ポイント</h3>
       <ul>
         <li>16件 × 6問 が <b>1秒かからず</b>に終わる</li>
-        <li>しきい値を動かすと<br><b>管理者が読む件数</b>と<b class="warn">見逃し</b>が連動する</li>
-        <li>「今日は楽しそうだった」だけの記録は<br>記録の具体性 0（監査対策にも使える）</li>
-        <li>その場で記録を打ち込んで判定</li>
+        <li>しきい値を動かすと<br><b>管理者が確認する件数</b>と<b class="warn">見逃し</b>が連動する</li>
+        <li>「今日は楽しそうだった」だけの記録は<br>記録の具体性 0（監査対策にも活用できる）</li>
+        <li>その場で記録を入力して判定</li>
       </ul>
     </div>
   </div>
@@ -163,10 +163,10 @@
       </ul>
     </div>
     <div class="card">
-      <h3>見てほしいところ</h3>
+      <h3>確認ポイント</h3>
       <ul>
-        <li>confidence のしきい値で<br><b class="ok">自動振り分け率</b> と <b>自動分の正解率</b>のトレードオフ</li>
-        <li>曖昧な問い合わせ（お礼だけ、年齢が書いていない等）は confidence が下がって人に回る</li>
+        <li>confidence のしきい値で<br><b class="ok">自動振り分け率</b> と <b>自動処理分の正解率</b>のトレードオフを調整</li>
+        <li>曖昧な問い合わせ（お礼のみ、年齢未記載など）は confidence が下がって人による対応へ回る</li>
         <li><b>質問JSONをその場で書き換え</b>て再実行（例：「SNS経由か？」を追加）</li>
       </ul>
     </div>
@@ -182,89 +182,110 @@
         <li>危機対応（自傷・希死念慮）→ 人につなぐ</li>
         <li>プロンプトインジェクション</li>
         <li>個人情報（氏名・電話・手帳番号）</li>
-        <li>医療判断の要求（薬の量・診断）</li>
+        <li>医療判断の要求（服薬量・診断）</li>
         <li>対象内／対象外（Choice）、困り度（Score）</li>
       </ul>
     </div>
     <div class="card">
-      <h3>仕事ナビの話をそのまま題材に</h3>
+      <h3>想定する構成</h3>
       <ul>
-        <li>いま：Haiku で前後チェック → <b>前後 1秒ずつ</b></li>
-        <li>Jev：4種類のチェックを<b>1回、数百ms</b>で</li>
-        <li>生成とガードを分ける構成（IEPでも出た案）</li>
-        <li>「消えてしまいたい」のような<b>遠回しな表現</b>を拾えるか？ → しきい値をどこに置く？</li>
+        <li>LLMによる入出力チェックは、<b>前後それぞれ秒単位</b>の待ち時間が発生しやすい</li>
+        <li>Jev：4種類のチェックを<b>1回の呼び出し</b>で処理</li>
+        <li>回答生成と安全ガードを分ける構成</li>
+        <li>「消えてしまいたい」のような<b>遠回しな表現</b>を拾えるか？ → しきい値をどこに設定するか？</li>
       </ul>
     </div>
   </div>
 </section>
 
 <section class="s">
-  <h2>社内で出ている慎重論にどう答えるか</h2>
+  <h2>デモ④〜⑦ 判断の型を広げる <span class="tag">応用</span></h2>
+  <div class="grid g2">
+    <div class="card"><h3>④⑤ ランキング</h3><ul>
+      <li>求職者 × 求人10件、子どもの支援目標 × 教材10件</li>
+      <li>候補ごとに Noul を1問ずつ作成し、<b>10問を1回の呼び出し</b>で判定して確率順に並べる</li>
+      <li>プロフィールを切り替えると順位が入れ替わる（▲▼で変動を表示）</li></ul></div>
+    <div class="card"><h3>⑥ リアルタイム判定</h3><ul>
+      <li>就労定着支援の面談メモを、<b>入力が止まるたびに再判定</b></li>
+      <li>会話が進むにつれて、体調・業務量・人間関係・合理的配慮のネックが順に点灯</li>
+      <li>応答速度が前提となるユースケース</li></ul></div>
+    <div class="card"><h3>⑦ 構造化データ</h3><ul>
+      <li>就労移行支援の日報10日分を<b>JSONのまま state に渡す</b></li>
+      <li>通所中断のリスクと、今週中の個別面談の要否を判定</li>
+      <li>文章だけでなく、記録システムのデータも判定対象になる</li></ul></div>
+    <div class="card"><h3>確認ポイント</h3><ul>
+      <li>学習なしで、<b>質問の定義を変えるだけ</b>で用途が変わる</li>
+      <li>1件×多問（①〜③）、多候補×1問（④⑤）、連続入力（⑥）、JSON入力（⑦）</li></ul></div>
+  </div>
+</section>
+
+<section class="s">
+  <h2>社内で出ている慎重論への考え方</h2>
   <table>
     <tr><th>懸念</th><th>考え方</th></tr>
-    <tr><td>精度は？ 偽陽性・偽陰性が気になる</td><td>確率が返るので、<b>しきい値で FP / FN のどちらを許すか</b>を設計できる。<br><span class="sub">正解付きのサンプルで、デモのようにトレードオフの曲線を描いてから決める</span></td></tr>
-    <tr><td>「なぜマッチか」の説明が価値では？</td><td><b>2段構成</b>：Jev で速く安く絞り込み・並べ替え → 上位だけ LLM で説明を作る</td></tr>
-    <tr><td>「ハルシネーションしない」は本当？</td><td>自由文を出さないだけで、<b>判断を間違えることはある</b>。出力の形式が崩れないことと、判断が正しいことは別</td></tr>
-    <tr><td>中身がよく分からない（巨大Switch文？）</td><td>それで十分。<b>if 文の条件を自然言語で書ける</b>と思って使う</td></tr>
+    <tr><td>精度は？ 偽陽性・偽陰性が気になる</td><td>確率が返るため、<b>しきい値で FP / FN のどちらを許容するか</b>を設計できる。<br><span class="sub">正解付きのサンプルで、デモのようにトレードオフの曲線を描いてから決める</span></td></tr>
+    <tr><td>「なぜマッチか」の説明が価値では？</td><td><b>2段構成</b>：Jev で速く安く絞り込み・並べ替えを行い、上位のみ LLM で説明文を生成する</td></tr>
+    <tr><td>「ハルシネーションしない」は本当？</td><td>自由文を出力しないだけで、<b>モデルが判断を誤ることはある</b>。出力の形式が崩れないことと、判断内容の正しさは別</td></tr>
+    <tr><td>中身がよく分からない（巨大Switch文？）</td><td>実用上はそれで十分。<b>「if 文の条件判定を自然言語で記述できる仕組み」</b>と捉えて使う</td></tr>
   </table>
 </section>
 
 <section class="s">
-  <h2>障害福祉で使うときの注意</h2>
+  <h2>障害福祉で使うときの注意点</h2>
   <ul class="nested">
-    <li><b class="warn">データ</b>
+    <li><b class="warn">データ管理</b>
       <ul>
-        <li>支援記録は<b>要配慮個人情報</b>の塊。外部API（米国企業）に送る前提で、同意・匿名化・契約・データ保持を確認する</li>
-        <li>今日のデモは<b>すべてダミー</b></li>
+        <li>支援記録は<b>要配慮個人情報</b>に該当する。外部API（米国企業）へ送信する前提として、本人の同意、匿名化、契約内容、データ保持方針を確認する</li>
+        <li>本勉強会のデモデータは<b>すべて架空のダミー</b></li>
       </ul></li>
     <li><b class="warn">判断の責任</b>
       <ul>
-        <li>虐待の疑い・事故報告は<b>法令上の義務</b>。AIは「見落とさないための補助」であって、判定はしない</li>
-        <li>見逃しと過検知はコストが<b>非対称</b> → しきい値は安全側に</li>
+        <li>虐待の疑いや事故報告は<b>法令上の義務</b>。AIは「職員が見落とさないための補助」であり、最終判定は人が担う</li>
+        <li>見逃しと過検知は発生時の影響が<b>非対称</b>（重大事故の見逃しリスクが高い） → しきい値は安全側に設定する</li>
       </ul></li>
-    <li><b>精度</b>
+    <li><b>精度検証</b>
       <ul>
-        <li>確率がどれだけ当たっているかは<b>自分たちのデータで検証</b>してから使う</li>
-        <li>正解ラベル付きのサンプルを少数でも作るのが第一歩</li>
+        <li>出力される確率がどの程度実際と一致しているかは、<b>自組織のデータで検証</b>してから導入する</li>
+        <li>正解ラベル付きのサンプルを少数でも作成して評価するのが第一歩</li>
       </ul></li>
-    <li><b>現場の受け止め</b>
+    <li><b>現場での受容性</b>
       <ul>
-        <li>「AIに見張られている」ではなく「書いた記録が誰かに届く」体験として設計する</li>
+        <li>「AIに監視されている」という心理的負担を避け、「書いた支援記録が適切に共有・活用される」体験として設計する</li>
       </ul></li>
   </ul>
 </section>
 
 <section class="s">
   <h2>ブレスト：判断を棚卸しする</h2>
-  <p class="big" style="font-size:32px">私たちの事業・プロダクト・サービスの中で、<br><span class="accent">選ぶ / 点をつける / Yes・Noを決める</span> が<br>たくさん起きているのはどこ？</p>
+  <p class="big" style="font-size:32px">事業・プロダクト・サービスの中で、<br><span class="accent">「選ぶ」「点をつける」「Yes/Noを決める」</span> が<br>頻繁に発生している業務はどこか？</p>
   <div class="grid g3" style="margin-top:24px">
-    <div class="card"><h3>① 件数</h3><p>1日・1か月で何回起きる？<br>いま誰が（人・仕組み）判断している？</p></div>
-    <div class="card"><h3>② 間違えたときのコスト</h3><p>見逃すと何が起きる？<br>過検知だと何が起きる？</p></div>
-    <div class="card"><h3>③ 判断材料</h3><p>テキスト／フォームとして<br>すでにデータになっている？</p></div>
+    <div class="card"><h3>① 発生件数</h3><p>1日・1か月で何回起きるか？<br>現在誰が（人または既存システムが）判断しているか？</p></div>
+    <div class="card"><h3>② 誤判定時の影響</h3><p>見逃すとどのような事態が起きるか？<br>過検知だと運用上どう負担になるか？</p></div>
+    <div class="card"><h3>③ 判断材料のデータ化</h3><p>テキストや入力フォームとして、<br>すでに構造化・データ化されているか？</p></div>
   </div>
-  <p class="sub" style="font-size:20px;margin-top:16px">観点の例：利用者・家族の体験／支援の質／現場の業務負荷／事業の運営・収益／プロダクトの機能・開発<br>件数が多く、データがあり、外したときのコストが許容できるもの → まず試す候補</p>
+  <p class="sub" style="font-size:20px;margin-top:16px">観点例：利用者・家族の体験／支援品質／現場の業務負荷／事業運営・収益性／プロダクト機能・開発<br>件数が多く、判断材料がデータとして揃っており、誤判定時の影響を運用で許容できるものから着手する</p>
 </section>
 
 <section class="s">
-  <h2>ブレストの種</h2>
+  <h2>ブレストの候補例</h2>
   <div class="grid g2">
     <div class="card"><h3>支援系</h3><ul>
-      <li>連絡帳・支援記録 → 保護者に共有すべき事項の抜け漏れチェック</li>
-      <li>モニタリング記録 → 個別支援計画の目標ごとの達成度スコア</li>
-      <li>就労移行の日報 → 体調悪化・通所中断のサインを早めに検知</li>
-      <li>定着支援の面談記録 → 離職リスクのスコア</li>
-      <li>ケース記録 → 加算の算定要件を満たす記載があるか</li>
+      <li>連絡帳・支援記録 → 保護者へ共有すべき重要事項の記載漏れ検知</li>
+      <li>モニタリング記録 → 個別支援計画の目標ごとの進捗・達成度スコア算出</li>
+      <li>就労移行の日報 → 体調悪化や通所中断のサインの早期検知</li>
+      <li>定着支援の面談記録 → 離職リスクのスコアリング</li>
+      <li>ケース記録 → 加算の算定要件を満たす記載の有無チェック</li>
     </ul></div>
     <div class="card"><h3>運営系</h3><ul>
-      <li>問い合わせ・見学申込の振り分け、折り返しの優先度付け</li>
-      <li>苦情・ヒヤリハット報告の分類と傾向分析</li>
-      <li>求人応募者の書類一次チェック（※バイアスに注意）</li>
-      <li>請求前チェック：実績記録と計画の整合性</li>
-      <li>社内ヘルプデスク・稟議の規程チェック</li>
-      <li>LLMで作った文書の品質ゲート（LLM × Jev）</li>
+      <li>問い合わせ・見学申込の一次振り分けと、折り返し対応の優先度判定</li>
+      <li>苦情・ヒヤリハット報告の自動分類と傾向分析</li>
+      <li>求人応募書類の一次要件チェック（※バイアスへの配慮が必要）</li>
+      <li>請求前チェック：実績記録票と支援計画の整合性確認</li>
+      <li>社内ヘルプデスク・稟議申請における規程遵守チェック</li>
+      <li>LLM生成文書の品質検査ゲート（LLMとJevの組み合わせ）</li>
     </ul></div>
   </div>
-  <p class="sub" style="font-size:18px;margin-top:14px">開発系（社内で既出）：tool call の結果を圧縮する／長い問答を Jev で判定する（grill-jev）／雑で速い Linter／QA の Judge を置き換えてテストコストを下げる</p>
+  <p class="sub" style="font-size:18px;margin-top:14px">開発系（社内で既出）：ツール呼び出し結果の圧縮／長文の対話内容の判定（grill-jev）／軽量・高速な静的検査／QA時の評価判定を置き換えたテストコスト削減</p>
 </section>
 
 <section class="s">
@@ -287,19 +308,6 @@
   </div>
 </section>
 
-<section class="s">
-  <h2>Appendix：デモの動かし方</h2>
-<pre><code>git clone … &amp;&amp; cd jev-demo-1
-pip install -r requirements.txt
-export TYPESAFE_API_KEY=...            <span class="c"># console.typesafe.ai で発行</span>
-python demo/server.py                  <span class="c"># → http://localhost:8000</span>
-
-<span class="c"># キーがない／会場のネットワークが不安定な場合</span>
-<span class="c">#  - 一度 LIVE で実行した結果は demo/cache/ に保存され、キーなしでもそのまま再生される</span>
-<span class="c">#  - キャッシュもない場合はモックで動く（画面に mock と表示される）</span>
-JEV_OFFLINE=1 python demo/server.py    <span class="c"># 強制的にオフライン</span></code></pre>
-  <p class="sub" style="font-size:18px;margin-top:16px">質問定義：demo/scenarios.json ／ サーバー：demo/server.py（標準ライブラリ + typesafe-sdk）<br>自分で試すなら：scenarios.json にシナリオを1つ足すと、画面にタブが増える</p>
-</section>
 
 </div>
 <div class="foot" id="pg" style="position:fixed;color:#9aa5b8;font:14px system-ui"></div>
