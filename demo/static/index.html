@@ -26,7 +26,23 @@
   .badge.live { background: var(--ok-soft); color: var(--ok); }
   .badge.offline { background: var(--warn-soft); color: var(--warn); }
   .tabs { display: flex; gap: 6px; margin-left: auto; }
-  .tabs button { border: 1px solid var(--line); background: transparent; color: var(--ink); padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+  .tabs { flex-wrap: wrap; }
+  .tabs button { border: 1px solid var(--line); background: transparent; color: var(--ink); padding: 5px 11px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+  .tabs button small { color: var(--sub); margin-right: 4px; }
+  .tabs button.on small { color: #fff; opacity: .8; }
+  .presets { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .presets button { border: 1px solid var(--line); background: var(--bg); color: var(--ink); padding: 6px 12px; border-radius: 99px; cursor: pointer; font-size: 13px; }
+  .presets button.on { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .rank { display: grid; gap: 6px; margin-top: 12px; }
+  .rank .item { display: grid; grid-template-columns: 34px 1fr 200px 52px 40px; gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; transition: transform .3s; }
+  .rank .no { font-size: 20px; font-weight: 800; color: var(--sub); text-align: center; }
+  .rank .item.top .no { color: var(--accent); }
+  .rank .t { font-weight: 700; } .rank .d { font-size: 12px; color: var(--sub); }
+  .rank .p { font-variant-numeric: tabular-nums; font-weight: 700; text-align: right; }
+  .rank .mv { font-size: 12px; text-align: center; } .mv.up { color: var(--ok); } .mv.down { color: var(--warn); }
+  @media (max-width: 700px) { .rank .item { grid-template-columns: 28px 1fr 60px; } .rank .item .meter, .rank .mv { display: none; } }
+  textarea.live { font-size: 15px; min-height: 170px; }
+  pre.json { max-height: 220px; font-size: 11px; }
   .tabs button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
   main { max-width: 1280px; margin: 0 auto; padding: 18px 20px 60px; display: grid; gap: 16px; }
   section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
@@ -92,11 +108,35 @@
   <section>
     <h2><span id="title"></span><span class="cat" id="cat"></span></h2>
     <div class="sub" id="lead"></div>
-    <div class="row" style="margin-top:12px">
-      <button class="primary" id="runAll">全件を Jev で判定</button>
-      <span class="sub" id="runInfo"></span>
+    <div id="batchCtl">
+      <div class="row" style="margin-top:12px">
+        <button class="primary" id="runAll">全件を Jev で判定</button>
+        <span class="sub" id="runInfo"></span>
+      </div>
+      <div class="tiles" id="stats"></div>
     </div>
-    <div class="tiles" id="stats"></div>
+  </section>
+
+  <section id="rankSec" hidden>
+    <h2 id="rankHead">プロフィール</h2>
+    <div class="presets" id="presets"></div>
+    <textarea id="rankQuery" rows="3"></textarea>
+    <div class="row" style="margin-top:8px">
+      <button class="primary" id="runRank">並べ替える</button>
+      <span class="sub" id="rankInfo"></span>
+    </div>
+    <div class="rank" id="rankOut"></div>
+  </section>
+
+  <section id="liveSec" hidden>
+    <h2>打つたびに判定 <span class="sub" style="font-weight:400" id="liveInfo"></span></h2>
+    <div class="row" style="margin-bottom:8px">
+      <button class="primary" id="play">会話を再生</button>
+      <button class="ghost" id="stop">停止</button>
+      <button class="ghost" id="clearLive">クリア</button>
+    </div>
+    <textarea class="live" id="liveText" placeholder="面談メモを入力してください。入力が止まると、すぐに判定が更新されます。"></textarea>
+    <div class="cards" id="liveOut"></div>
   </section>
 
   <section id="gateSec" hidden>
@@ -120,7 +160,7 @@
     <div class="tablewrap"><table id="tbl"></table></div>
   </section>
 
-  <section>
+  <section id="freeSec">
     <h2>その場で入力して判定</h2>
     <textarea id="free" rows="3" placeholder="例：帰りの会で友だちとぶつかって転び、おでこを打った。保冷剤で冷やし、腫れは見られない。"></textarea>
     <div class="row" style="margin-top:8px">
@@ -169,12 +209,18 @@ async function init() {
   $("mode").textContent = CFG.live ? "LIVE · Jev API" : "OFFLINE · cache/mock";
   $("mode").className = "badge " + (CFG.live ? "live" : "offline");
   const keys = Object.keys(CFG.scenarios);
-  $("tabs").innerHTML = keys.map((k) => `<button data-k="${k}">${esc(CFG.scenarios[k].category)}：${esc(CFG.scenarios[k].title)}</button>`).join("");
-  $("tabs").onclick = (e) => { if (e.target.dataset.k) select(e.target.dataset.k); };
+  $("tabs").innerHTML = keys.map((k) => `<button data-k="${k}"><small>${esc(CFG.scenarios[k].category)}</small>${esc(CFG.scenarios[k].title)}</button>`).join("");
+  $("tabs").onclick = (e) => { const b = e.target.closest("button"); if (b?.dataset.k) select(b.dataset.k); };
+  $("runRank").onclick = runRank;
+  $("presets").onclick = (e) => { const b = e.target.closest("button"); if (b) { $("rankQuery").value = sc().presets[+b.dataset.i].text; markPreset(); runRank(); } };
+  $("rankQuery").oninput = markPreset;
+  $("liveText").oninput = () => scheduleLive();
+  $("play").onclick = playScript; $("stop").onclick = stopScript;
+  $("clearLive").onclick = () => { stopScript(); $("liveText").value = ""; $("liveOut").innerHTML = ""; };
   $("runAll").onclick = runAll;
   $("runOne").onclick = runOne;
   $("th").oninput = renderGate;
-  $("reset").onclick = () => { $("qjson").value = JSON.stringify(sc().questions, null, 2); renderPy(); };
+  $("reset").onclick = () => { $("qjson").value = JSON.stringify(defaultQuestions(sc()), null, 2); renderPy(); };
   $("qjson").oninput = renderPy;
   select(location.hash.slice(1) in CFG.scenarios ? location.hash.slice(1) : keys[0]);
 }
@@ -184,8 +230,21 @@ function select(k) {
   document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.k === k));
   const s = sc();
   $("title").textContent = s.title; $("cat").textContent = s.category; $("lead").textContent = s.lead;
-  $("runAll").textContent = `全 ${s.records.length} 件を Jev で判定`;
-  $("qjson").value = JSON.stringify(s.questions, null, 2);
+  const mode = s.mode || "batch";
+  stopScript();
+  $("batchCtl").hidden = mode !== "batch";
+  $("rankSec").hidden = mode !== "ranking";
+  $("liveSec").hidden = mode !== "realtime";
+  $("freeSec").hidden = mode !== "batch" || s.records.some((r) => r.state);
+  if (mode === "batch") $("runAll").textContent = `全 ${s.records.length} 件を Jev で判定`;
+  if (mode === "ranking") {
+    $("rankHead").textContent = s.query_key;
+    $("presets").innerHTML = s.presets.map((p, i) => `<button data-i="${i}">${esc(p.label)}</button>`).join("");
+    $("rankQuery").value = s.presets[0].text; prevRank = null; markPreset();
+    $("rankOut").innerHTML = ""; $("rankInfo").textContent = `${s.candidates.length} 候補 × 1問ずつ = ${s.candidates.length} 問を 1 回の呼び出しで判定`;
+  }
+  if (mode === "realtime") { $("liveText").value = ""; $("liveOut").innerHTML = ""; liveStats = []; $("liveInfo").textContent = ""; }
+  $("qjson").value = JSON.stringify(defaultQuestions(s), null, 2);
   $("free").placeholder = "例：" + ({
     support_record: "帰りの会で友だちとぶつかって転び、おでこを打った。保冷剤で冷やし、腫れは見られない。",
     inquiry_triage: "来年小学校に上がる娘がいます。放課後に通える場所があるか知りたく、一度見学に行けますか？",
@@ -342,7 +401,7 @@ function renderTable() {
   const head = `<thead><tr><th>ID</th><th>扱い</th><th>本文</th>${names.map((n) => `<th title="${esc(qInstr(n))}">${esc(n)}</th>`).join("")}<th>ms</th></tr></thead>`;
   const body = results.map((r, i) => {
     const rec = s.records[i];
-    return `<tr><td>${rec.id}</td><td><span class="status"></span></td><td class="text">${esc(rec.text)}</td>${names.map((n) => cell(n, r.answers[n], rec.expect[n])).join("")}<td class="num">${r.latency_ms} <span class="src ${r.source}">${r.source}</span>${r.error ? `<div class="miss" title="${esc(r.error)}">API失敗</div>` : ""}</td></tr>`;
+    return `<tr><td>${rec.id}</td><td><span class="status"></span></td><td class="text">${rec.text ? esc(rec.text) : `${esc(rec.summary)}<details><summary class="sub">state（JSON）</summary><pre class="json">${esc(JSON.stringify(rec.state, null, 1))}</pre></details>`}</td>${names.map((n) => cell(n, r.answers[n], rec.expect[n])).join("")}<td class="num">${r.latency_ms} <span class="src ${r.source}">${r.source}</span>${r.error ? `<div class="miss" title="${esc(r.error)}">API失敗</div>` : ""}</td></tr>`;
   }).join("");
   $("tbl").innerHTML = head + "<tbody>" + body + "</tbody>";
 }
@@ -388,7 +447,7 @@ function renderPy() {
 
 with TypeSafeClient() as client:  # TYPESAFE_API_KEY を読む
     res = client.system_one(
-        state={"${s.state_key}": text, **${py(s.state_extra, "        ")}},
+        state=${stateLine(s, py)},
         questions={
 ${lines.join("\n")}
         },
@@ -398,6 +457,77 @@ ${lines.join("\n")}
 res.choices["…"].choice, res.choices["…"].confidence, res.choices["…"].probabilities
 res.nouls["…"].noul          # p(yes) 0〜1
 res.scores["…"].score        # 確率加重の期待スコア`;
+}
+
+// ---- shared helpers for new modes ------------------------------------
+function defaultQuestions(s) {
+  if (s.mode !== "ranking") return s.questions;
+  return Object.fromEntries(s.candidates.map((c) => [`c_${c.id}`, { type: "noul", instructions: s.question_template.replace("{id}", c.id).replace("{title}", c.title) }]));
+}
+function stateLine(s, py) {
+  if (s.mode === "ranking") return `{"${s.query_key}": profile, "${s.candidates_key}": {"${s.candidates[0].id}": "${s.candidates[0].title}：…", ...}}`;
+  if (s.records?.some((r) => r.state)) return `{**record_json, **${py(s.state_extra, "        ")}}  # JSON をそのまま渡せる`;
+  return `{"${s.state_key}": text, **${py(s.state_extra, "        ")}}`;
+}
+
+// ---- ranking ------------------------------------------------------------
+let prevRank = null;
+function markPreset() {
+  const v = $("rankQuery").value;
+  document.querySelectorAll("#presets button").forEach((b) => b.classList.toggle("on", sc().presets[+b.dataset.i].text === v));
+}
+async function runRank() {
+  const s = sc(), q = questions(); if (!q) return;
+  const item = { [s.query_key]: $("rankQuery").value, [s.candidates_key]: Object.fromEntries(s.candidates.map((c) => [c.id, `${c.title}：${c.desc}`])) };
+  $("runRank").disabled = true;
+  try {
+    const r = (await post("/api/judge", { scenario: key, questions: q, item })).results[0];
+    const rows = s.candidates.map((c) => ({ c, p: r.answers[`c_${c.id}`]?.noul ?? 0 })).sort((a, b) => b.p - a.p);
+    const rankNow = Object.fromEntries(rows.map((x, i) => [x.c.id, i]));
+    $("rankOut").innerHTML = rows.map((x, i) => {
+      const d = prevRank ? prevRank[x.c.id] - i : 0;
+      const mv = !prevRank || d === 0 ? "" : d > 0 ? `<span class="mv up">▲${d}</span>` : `<span class="mv down">▼${-d}</span>`;
+      return `<div class="item ${i < 3 ? "top" : ""}"><div class="no">${i + 1}</div><div><div class="t">${esc(x.c.id)} ${esc(x.c.title)}</div><div class="d">${esc(x.c.desc)}</div></div><div class="meter ${x.p >= 0.5 ? "" : ""}"><i style="width:${pct(x.p)}"></i></div><div class="p">${pct(x.p)}</div><div class="mv">${mv}</div></div>`;
+    }).join("");
+    prevRank = rankNow;
+    $("rankInfo").innerHTML = `${s.candidates.length} 問を 1 回で判定 · ${r.latency_ms} ms · 入力 ${r.usage?.input_tokens ?? "?"} tokens · <span class="src ${r.source}">${r.source}</span>${r.error ? ` <span class="miss">${esc(r.error)}</span>` : ""}`;
+  } catch (e) { $("rankInfo").textContent = "エラー: " + e.message; }
+  $("runRank").disabled = false;
+}
+
+// ---- realtime -----------------------------------------------------------
+let liveTimer = null, liveSeq = 0, liveStats = [], playing = null;
+function scheduleLive(delay = 350) {
+  clearTimeout(liveTimer);
+  liveTimer = setTimeout(runLive, delay);
+}
+async function runLive() {
+  const text = $("liveText").value.trim(), q = questions();
+  if (!text || !q) return;
+  const seq = ++liveSeq;
+  try {
+    const r = (await post("/api/judge", { scenario: key, questions: q, text })).results[0];
+    if (seq !== liveSeq) return; // 古い応答は捨てる
+    liveStats.push(r.latency_ms);
+    $("liveInfo").innerHTML = `${liveStats.length} 回目 · 今回 ${r.latency_ms} ms · 中央値 ${median(liveStats)} ms · <span class="src ${r.source}">${r.source}</span>`;
+    $("liveOut").innerHTML = Object.entries(r.answers).map(([n, a]) => card(n, a, q[n])).join("");
+  } catch (e) { $("liveInfo").textContent = "エラー: " + e.message; }
+}
+function stopScript() { if (playing) { clearTimeout(playing); playing = null; } }
+function playScript() {
+  stopScript();
+  const lines = sc().script || [];
+  $("liveText").value = ""; $("liveOut").innerHTML = ""; liveStats = [];
+  let li = 0, ci = 0;
+  const step = () => {
+    if (li >= lines.length) { playing = null; return; }
+    const line = lines[li];
+    if (ci === 0 && li > 0) $("liveText").value += "\n";
+    $("liveText").value += line[ci++];
+    if (ci >= line.length) { li++; ci = 0; scheduleLive(150); playing = setTimeout(step, 1600); }
+    else playing = setTimeout(step, 28);
+  };
+  step();
 }
 
 init();
