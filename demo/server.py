@@ -3,13 +3,18 @@
     export TYPESAFE_API_KEY=...   # 未設定ならキャッシュ → モックで動く
     python demo/server.py         # http://localhost:8000
 
+外に公開するとき（Cloudflare Tunnel など）は DEMO_PASSWORD を設定すると Basic 認証がかかる
+（ユーザー名は何でもよく、パスワードだけを照合する）。
+
 - LIVE : Jev API を呼ぶ。結果は demo/cache/ に保存し、オフライン時に再生できる
 - CACHE: キーなし / API 失敗時、同じ (質問, 本文) の過去結果を返す
 - MOCK : キャッシュもない場合のダミー応答（画面に MOCK と表示される）
 """
 
 import asyncio
+import base64
 import hashlib
+import hmac
 import json
 import os
 import random
@@ -265,7 +270,28 @@ class Handler(BaseHTTPRequestHandler):
     def _json(self, payload, status: int = 200) -> None:
         self._send(status, json.dumps(payload, ensure_ascii=False).encode(), "application/json; charset=utf-8")
 
+    def _authorized(self) -> bool:
+        """DEMO_PASSWORD が設定されていれば Basic 認証を求める。未設定なら素通し。"""
+        password = os.environ.get("DEMO_PASSWORD")
+        if not password:
+            return True
+        header = self.headers.get("Authorization", "")
+        if header.startswith("Basic "):
+            try:
+                _, _, given = base64.b64decode(header[6:]).decode().partition(":")
+            except ValueError:
+                given = ""
+            if hmac.compare_digest(given.encode(), password.encode()):
+                return True
+        self.send_response(401)
+        self.send_header("WWW-Authenticate", 'Basic realm="Jev demo", charset="UTF-8"')
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+        return False
+
     def do_GET(self):
+        if not self._authorized():
+            return
         if self.path in ("/", "/index.html"):
             self._send(200, (ROOT / "static" / "index.html").read_bytes(), "text/html; charset=utf-8")
         elif self.path == "/api/config":
@@ -274,6 +300,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send(404, b"not found", "text/plain")
 
     def do_POST(self):
+        if not self._authorized():
+            return
         try:
             body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
             scenario = SCENARIOS[body["scenario"]]

@@ -27,6 +27,20 @@ python demo/server.py              # → http://localhost:8000
 
 > 本番前に一度 LIVE で「全件判定」を両シナリオで実行しておくと、会場のネットワークが不安定でもキャッシュで同じ結果を見せられる。
 
+## 他の人に触ってもらう（Cloudflare Tunnel）
+
+手元で動かしているデモに、一時的な公開 URL を付ける。Cloudflare のアカウントは不要。
+
+```powershell
+$env:TYPESAFE_API_KEY = "..."
+$env:DEMO_PASSWORD = "合言葉"      # 公開するときは必ず設定する（Basic 認証）
+py demo\server.py
+# 別の PowerShell で
+cloudflared tunnel --url http://localhost:8000
+```
+
+表示される `https://xxxx.trycloudflare.com` を共有する。ブラウザでユーザー名とパスワードを聞かれたら、ユーザー名は何でもよく、パスワードに `DEMO_PASSWORD` を入れる。URL とパスワードを知っている人は API キーを使えるので、終わったら Ctrl + C で両方止める。
+
 ## デモの見どころ
 
 1. **全件判定**：全件 × 6問を並列で判定し、所要時間・トークン数・概算コストを表示する
