@@ -1,0 +1,172 @@
+{
+  "support_record": {
+    "title": "支援記録チェック",
+    "category": "支援系",
+    "lead": "放課後等デイサービスの日々の支援記録（ダミー）を Jev に一括判定させ、管理者が読むべき記録だけを浮かび上がらせる。",
+    "state_key": "支援記録",
+    "state_extra": {"事業所種別": "放課後等デイサービス", "利用者": "小学生（ダミー）"},
+    "questions": {
+      "domain": {
+        "type": "choice",
+        "instructions": "この記録の支援内容は、個別支援計画の5領域のどれに最も関係するか？",
+        "criteria": {
+          "健康・生活": "体調、食事、排泄、着替え、睡眠など生活の基本",
+          "運動・感覚": "粗大運動・微細運動、感覚の過敏や鈍麻への対応",
+          "認知・行動": "見通し、注意、学習、こだわり、行動の調整",
+          "言語・コミュニケーション": "ことばの理解と表出、意思の伝達、あいさつ",
+          "人間関係・社会性": "他児とのやりとり、ルール、集団参加、感情の調整"
+        }
+      },
+      "incident": {
+        "type": "noul",
+        "instructions": "ケガ・事故、またはヒヤリハット（事故になりかけた事象）が記録されているか？",
+        "criteria": {
+          "true": "事故報告書またはヒヤリハット報告書の作成が必要な事象がある",
+          "false": "事故・ヒヤリハットに該当する事象はない（体調不良のみは含まない）"
+        }
+      },
+      "safeguarding": {
+        "type": "noul",
+        "instructions": "虐待（身体的・心理的・ネグレクト等）の可能性を示すサインがあり、権利擁護の観点で管理者の確認が必要か？",
+        "criteria": {
+          "true": "家庭等での虐待やネグレクトを疑わせる具体的なサインがある",
+          "false": "そのようなサインはない"
+        }
+      },
+      "parent_share": {
+        "type": "noul",
+        "instructions": "今日の迎え時または連絡帳で、保護者へ必ず共有すべき事項があるか？",
+        "criteria": {
+          "true": "ケガ、体調変化、他児とのトラブル、大きな不調などの共有事項がある",
+          "false": "通常の様子の報告で足りる"
+        }
+      },
+      "condition": {
+        "type": "score",
+        "instructions": "本日の本人の状態は？",
+        "criteria": ["安定して過ごせた", "やや不安定な場面があった", "不安定で個別対応が必要だった", "強い不調・パニックがあった"]
+      },
+      "record_quality": {
+        "type": "score",
+        "instructions": "記録の具体性は？（場面・本人の行動・支援者の関わり・結果が書かれているか）",
+        "criteria": ["主観的な感想のみ", "一部具体的", "場面・行動・支援・結果が具体的"]
+      }
+    },
+    "gate": {
+      "kind": "noul_any",
+      "questions": ["incident", "safeguarding"],
+      "label": "管理者確認へ回すしきい値",
+      "explain": "incident / safeguarding のどちらかの確率がしきい値以上なら『管理者が確認』。残りは担当者確認のみ。"
+    },
+    "records": [
+      {"id": "R01", "text": "工作活動で、はさみを使って線に沿って紙を切る練習をした。前回は途中で止まっていたが、今日は最後まで自分で切り終えた。支援員が「できたね」と声をかけると笑顔を見せた。",
+       "expect": {"domain": "運動・感覚", "incident": false, "safeguarding": false, "parent_share": false, "condition": 0, "record_quality": 2}},
+      {"id": "R02", "text": "おやつの時間に他児とおもちゃの取り合いになり、Bさんの腕を噛んでしまった。Bさんの腕に歯形が残ったため保冷剤で冷却。双方の保護者へ連絡予定。",
+       "expect": {"domain": "人間関係・社会性", "incident": true, "safeguarding": false, "parent_share": true, "condition": 2, "record_quality": 2}},
+      {"id": "R03", "text": "今日は落ち着いて過ごせた。楽しそうだった。",
+       "expect": {"domain": "健康・生活", "incident": false, "safeguarding": false, "parent_share": false, "condition": 0, "record_quality": 0}, "ambiguous": true},
+      {"id": "R04", "text": "送迎車から降りる際、ステップで足を踏み外しかけたが、横にいた職員が支えて転倒はなかった。ケガなし。",
+       "expect": {"domain": "運動・感覚", "incident": true, "safeguarding": false, "parent_share": false, "condition": 0, "record_quality": 1}},
+      {"id": "R05", "text": "着替えの際、背中に複数のあざがあるのに気づいた。本人にどうしたのか聞くと「パパが…」と言って黙ってしまった。",
+       "expect": {"domain": "健康・生活", "incident": false, "safeguarding": true, "parent_share": false, "condition": 1, "record_quality": 1}},
+      {"id": "R06", "text": "集団でのSST。順番を待つ場面でタイマーを提示すると、3回中3回とも最後まで待つことができた。",
+       "expect": {"domain": "人間関係・社会性", "incident": false, "safeguarding": false, "parent_share": false, "condition": 0, "record_quality": 2}},
+      {"id": "R07", "text": "来所時から表情が硬く、活動に誘うと大声を出して部屋の隅にうずくまった。クールダウンスペースで20分過ごし落ち着いた。母より連絡帳に「昨晩あまり眠れていない」と記載あり。",
+       "expect": {"domain": "認知・行動", "incident": false, "safeguarding": false, "parent_share": true, "condition": 3, "record_quality": 2}},
+      {"id": "R08", "text": "昼食後に37.8度の発熱。保護者に連絡し、15時にお迎えに来てもらった。",
+       "expect": {"domain": "健康・生活", "incident": false, "safeguarding": false, "parent_share": true, "condition": 2, "record_quality": 1}},
+      {"id": "R09", "text": "ひらがなカードで自分の名前を並べることができた。",
+       "expect": {"domain": "言語・コミュニケーション", "incident": false, "safeguarding": false, "parent_share": false, "condition": 0, "record_quality": 1}},
+      {"id": "R10", "text": "公園での外遊び中、職員が他児に対応していた数秒の間に、道路の方向へ走り出した。別の職員がすぐに追いかけて保護。ケガなし。",
+       "expect": {"domain": "認知・行動", "incident": true, "safeguarding": false, "parent_share": true, "condition": 1, "record_quality": 2}},
+      {"id": "R11", "text": "ここ2週間ほど毎回同じ服で来所しており、においが気になる。爪も長く伸びたまま。おやつの時間に「お腹すいた」と何度もおかわりを求めた。",
+       "expect": {"domain": "健康・生活", "incident": false, "safeguarding": true, "parent_share": false, "condition": 1, "record_quality": 2}},
+      {"id": "R12", "text": "服薬介助の際、他児の頓服薬を誤って手渡しかけたが、服用前に別の職員が名前を確認して気づいた。",
+       "expect": {"domain": "健康・生活", "incident": true, "safeguarding": false, "parent_share": false, "condition": 0, "record_quality": 1}},
+      {"id": "R13", "text": "おやつを受け取るときに、自分から「ありがとう」と言えた場面が2回あった。",
+       "expect": {"domain": "言語・コミュニケーション", "incident": false, "safeguarding": false, "parent_share": false, "condition": 0, "record_quality": 1}},
+      {"id": "R14", "text": "他の子に「バカ」と言われたと泣いていた。話を聞き、嫌だった気持ちを言葉にする練習をした。",
+       "expect": {"domain": "人間関係・社会性", "incident": false, "safeguarding": false, "parent_share": true, "condition": 1, "record_quality": 1}, "ambiguous": true},
+      {"id": "R15", "text": "トランポリンでバランスを取る活動。10回連続で跳ぶことができた。",
+       "expect": {"domain": "運動・感覚", "incident": false, "safeguarding": false, "parent_share": false, "condition": 0, "record_quality": 1}},
+      {"id": "R16", "text": "階段で転倒し、膝を擦りむいた。流水で洗って絆創膏を貼った。本人は泣かずにすぐ活動に戻った。",
+       "expect": {"domain": "運動・感覚", "incident": true, "safeguarding": false, "parent_share": true, "condition": 0, "record_quality": 2}}
+    ]
+  },
+
+  "inquiry_triage": {
+    "title": "問い合わせトリアージ",
+    "category": "運営系",
+    "lead": "Webフォームに届く問い合わせ（ダミー）を、サービス・送り主・緊急度などで一括判定し、自信があるものだけ自動で振り分ける。",
+    "state_key": "問い合わせ本文",
+    "state_extra": {"窓口": "障害福祉サービス事業者の共通問い合わせフォーム"},
+    "questions": {
+      "service": {
+        "type": "choice",
+        "instructions": "この問い合わせはどのサービスの担当に回すべきか？",
+        "criteria": {
+          "児童発達支援": "未就学児の発達支援",
+          "放課後等デイサービス": "小学生〜高校生の放課後・休日の支援",
+          "就労移行支援": "一般就労を目指す障害のある方の職業訓練・就職活動支援",
+          "就労定着支援": "就職後の職場定着の支援（本人・企業からの相談）",
+          "採用・その他": "求人応募、行政手続き、取材など利用相談以外"
+        }
+      },
+      "sender": {
+        "type": "choice",
+        "instructions": "送り主は誰か？",
+        "criteria": {
+          "保護者": null,
+          "本人": null,
+          "相談支援専門員・行政など関係機関": null,
+          "企業": null,
+          "その他": null
+        }
+      },
+      "visit": {"type": "noul", "instructions": "見学・体験・説明会への参加を希望しているか？"},
+      "certificate": {"type": "noul", "instructions": "受給者証や手帳など、利用手続きについての質問を含むか？"},
+      "complaint": {"type": "noul", "instructions": "苦情・不満の申し立てを含むか？"},
+      "urgency": {
+        "type": "score",
+        "instructions": "対応の緊急度は？",
+        "criteria": ["情報収集の段階", "近日中に対応したい", "困りごとが切迫しており当日中に連絡すべき"]
+      }
+    },
+    "gate": {
+      "kind": "choice_conf",
+      "question": "service",
+      "label": "自動振り分けする confidence のしきい値",
+      "explain": "service の confidence がしきい値以上なら自動で担当へ振り分け、未満なら人が振り分ける。"
+    },
+    "records": [
+      {"id": "Q01", "text": "4歳の息子が保育園で集団行動が苦手と言われました。発達の相談ができる教室を探しています。一度見学できますか？",
+       "expect": {"service": "児童発達支援", "sender": "保護者", "visit": true, "certificate": false, "complaint": false, "urgency": 1}},
+      {"id": "Q02", "text": "小学2年の娘が放課後に通える場所を探しています。受給者証はまだ持っていないのですが、どうやって取ればいいですか？",
+       "expect": {"service": "放課後等デイサービス", "sender": "保護者", "visit": false, "certificate": true, "complaint": false, "urgency": 0}},
+      {"id": "Q03", "text": "精神障害者保健福祉手帳を持っています。一般企業で働きたいので、就職に向けたプログラムについて説明会があれば参加したいです。",
+       "expect": {"service": "就労移行支援", "sender": "本人", "visit": true, "certificate": false, "complaint": false, "urgency": 0}},
+      {"id": "Q04", "text": "先月から利用している息子のことです。迎えの時間を事前に伝えていたのに守られず、30分待たされました。改善してください。",
+       "expect": {"service": "放課後等デイサービス", "sender": "保護者", "visit": false, "certificate": false, "complaint": true, "urgency": 1}, "ambiguous": true},
+      {"id": "Q05", "text": "相談支援専門員の山田です。担当している20代男性の利用者様が就労移行支援の利用を検討しており、空き状況を教えてください。",
+       "expect": {"service": "就労移行支援", "sender": "相談支援専門員・行政など関係機関", "visit": false, "certificate": false, "complaint": false, "urgency": 1}},
+      {"id": "Q06", "text": "御社の支援を経て当社に入社した社員の方が、最近欠勤が続いています。どう対応すべきか至急ご相談したいです。",
+       "expect": {"service": "就労定着支援", "sender": "企業", "visit": false, "certificate": false, "complaint": false, "urgency": 2}},
+      {"id": "Q07", "text": "求人サイトを見ました。児童指導員として応募したいのですが、選考の流れを教えてください。",
+       "expect": {"service": "採用・その他", "sender": "その他", "visit": false, "certificate": false, "complaint": false, "urgency": 0}},
+      {"id": "Q08", "text": "息子が学校に行けなくなり、家で物を投げたりして荒れています。どこに相談すればいいかわからず、今日にでも話を聞いてほしいです。",
+       "expect": {"service": "放課後等デイサービス", "sender": "保護者", "visit": false, "certificate": false, "complaint": false, "urgency": 2}, "ambiguous": true},
+      {"id": "Q09", "text": "就職して半年になります。職場の人間関係で悩んでいて、担当の方と話をしたいです。",
+       "expect": {"service": "就労定着支援", "sender": "本人", "visit": false, "certificate": false, "complaint": false, "urgency": 1}},
+      {"id": "Q10", "text": "1歳半健診で言葉の遅れを指摘されました。まだ診断はないのですが、利用することはできますか？",
+       "expect": {"service": "児童発達支援", "sender": "保護者", "visit": false, "certificate": true, "complaint": false, "urgency": 0}},
+      {"id": "Q11", "text": "先日体験に伺った際、スタッフの方の説明がとても丁寧でした。ありがとうございました。来月から通わせたいと思っています。",
+       "expect": {"service": "児童発達支援", "sender": "保護者", "visit": false, "certificate": false, "complaint": false, "urgency": 1}, "ambiguous": true},
+      {"id": "Q12", "text": "市の障害福祉課です。事業所の指定更新に関する提出書類の件でご連絡しました。担当者様からご連絡ください。",
+       "expect": {"service": "採用・その他", "sender": "相談支援専門員・行政など関係機関", "visit": false, "certificate": false, "complaint": false, "urgency": 1}},
+      {"id": "Q13", "text": "中学生でも通えますか？土曜日だけの利用を考えています。",
+       "expect": {"service": "放課後等デイサービス", "sender": "保護者", "visit": false, "certificate": false, "complaint": false, "urgency": 0}},
+      {"id": "Q14", "text": "うつで休職中です。復職ではなく転職を考えていて、訓練に通いながら就職活動ができるところを探しています。",
+       "expect": {"service": "就労移行支援", "sender": "本人", "visit": false, "certificate": false, "complaint": false, "urgency": 0}}
+    ]
+  }
+}

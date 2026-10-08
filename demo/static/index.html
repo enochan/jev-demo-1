@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jev × 障害福祉 デモ</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #fff; --ink: #1d2330; --sub: #5d6676; --line: #e2e5ea;
+    --accent: #2f6fed; --accent-soft: #e6eefe;
+    --warn: #d9480f; --warn-soft: #fff1e8; --ok: #2b8a3e; --ok-soft: #e9f7ec;
+    --mock: #9c36b5; --bar: #cfd6e2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151b; --panel: #1b2029; --ink: #e8ebf0; --sub: #9aa3b2; --line: #2c3340;
+      --accent: #6c9bff; --accent-soft: #1f2b45; --warn: #ff8a50; --warn-soft: #3a2418;
+      --ok: #5fd27a; --ok-soft: #173022; --mock: #d17ce6; --bar: #3a4352;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; background: var(--bg); color: var(--ink); font-size: 14px; line-height: 1.6; }
+  header { position: sticky; top: 0; z-index: 5; background: var(--panel); border-bottom: 1px solid var(--line); padding: 10px 20px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  header h1 { font-size: 17px; margin: 0; }
+  .badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; letter-spacing: .05em; }
+  .badge.live { background: var(--ok-soft); color: var(--ok); }
+  .badge.offline { background: var(--warn-soft); color: var(--warn); }
+  .tabs { display: flex; gap: 6px; margin-left: auto; }
+  .tabs button { border: 1px solid var(--line); background: transparent; color: var(--ink); padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+  .tabs button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  main { max-width: 1280px; margin: 0 auto; padding: 18px 20px 60px; display: grid; gap: 16px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+  h2 { font-size: 15px; margin: 0 0 8px; display: flex; gap: 8px; align-items: center; }
+  .cat { font-size: 11px; padding: 1px 8px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); }
+  .sub { color: var(--sub); font-size: 13px; }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  button.primary { background: var(--accent); color: #fff; border: 0; padding: 9px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  button.primary:disabled { opacity: .5; cursor: wait; }
+  button.ghost { background: transparent; border: 1px solid var(--line); color: var(--ink); padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 12px; }
+  .tile { border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+  .tile .k { font-size: 11px; color: var(--sub); }
+  .tile .v { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tile .v small { font-size: 12px; font-weight: 400; color: var(--sub); margin-left: 2px; }
+  .tile.warn .v { color: var(--warn); } .tile.ok .v { color: var(--ok); }
+  .gate { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(280px, 1.2fr); gap: 18px; align-items: start; }
+  @media (max-width: 820px) { .gate { grid-template-columns: 1fr; } }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .th { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--accent); }
+  svg text { fill: var(--sub); font-size: 10px; }
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { border-bottom: 1px solid var(--line); padding: 7px 8px; text-align: left; vertical-align: top; }
+  th { font-size: 11px; color: var(--sub); font-weight: 600; white-space: nowrap; position: sticky; top: 0; background: var(--panel); }
+  td.text { min-width: 280px; max-width: 420px; }
+  tr.flag td:first-child { box-shadow: inset 4px 0 var(--warn); }
+  tr.auto td:first-child { box-shadow: inset 4px 0 var(--ok); }
+  .status { font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .status.flag { color: var(--warn); } .status.auto { color: var(--ok); } .status.human { color: var(--sub); }
+  .cell { min-width: 92px; }
+  .lbl { font-weight: 600; }
+  .meter { height: 5px; border-radius: 3px; background: var(--bar); margin-top: 3px; overflow: hidden; }
+  .meter > i { display: block; height: 100%; background: var(--accent); }
+  .meter.hot > i { background: var(--warn); }
+  .num { font-variant-numeric: tabular-nums; color: var(--sub); font-size: 11px; }
+  .miss { color: var(--warn); font-size: 11px; }
+  .src { font-size: 10px; padding: 0 5px; border-radius: 4px; border: 1px solid var(--line); color: var(--sub); }
+  .src.mock { color: var(--mock); border-color: var(--mock); }
+  textarea { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+  textarea.code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; min-height: 280px; }
+  pre { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; overflow: auto; font-size: 12px; margin: 0; max-height: 420px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 12px; }
+  .card { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .card .q { font-size: 11px; color: var(--sub); }
+  .card .a { font-size: 18px; font-weight: 700; }
+  .probs { margin-top: 6px; display: grid; gap: 2px; }
+  .probs div { display: grid; grid-template-columns: 1fr 70px 40px; gap: 6px; align-items: center; font-size: 11px; }
+  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 820px) { .twocol { grid-template-columns: 1fr; } }
+  details summary { cursor: pointer; font-weight: 600; }
+  .err { color: var(--warn); font-size: 12px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Jev × 障害福祉 デモ</h1>
+  <span id="mode" class="badge">…</span>
+  <span class="sub">データはすべてダミーです</span>
+  <nav class="tabs" id="tabs"></nav>
+</header>
+<main>
+  <section>
+    <h2><span id="title"></span><span class="cat" id="cat"></span></h2>
+    <div class="sub" id="lead"></div>
+    <div class="row" style="margin-top:12px">
+      <button class="primary" id="runAll">全件を Jev で判定</button>
+      <span class="sub" id="runInfo"></span>
+    </div>
+    <div class="tiles" id="stats"></div>
+  </section>
+
+  <section id="gateSec" hidden>
+    <h2>どこまで AI に任せるか（しきい値）</h2>
+    <div class="gate">
+      <div>
+        <div class="sub" id="gateLabel"></div>
+        <div class="th" id="thVal">0.50</div>
+        <input type="range" id="th" min="0.05" max="0.95" step="0.01" value="0.5">
+        <div class="sub" id="gateExplain" style="margin-top:6px"></div>
+        <div class="tiles" id="gateTiles"></div>
+      </div>
+      <div>
+        <svg id="curve" viewBox="0 0 420 220" width="100%" role="img" aria-label="しきい値と結果の関係"></svg>
+      </div>
+    </div>
+  </section>
+
+  <section id="tableSec" hidden>
+    <h2>判定結果 <span class="sub" style="font-weight:400">（✗ = 想定ラベルと不一致）</span></h2>
+    <div class="tablewrap"><table id="tbl"></table></div>
+  </section>
+
+  <section>
+    <h2>その場で入力して判定</h2>
+    <textarea id="free" rows="3" placeholder="例：帰りの会で友だちとぶつかって転び、おでこを打った。保冷剤で冷やし、腫れは見られない。"></textarea>
+    <div class="row" style="margin-top:8px">
+      <button class="primary" id="runOne">判定</button>
+      <span class="sub" id="oneInfo"></span>
+    </div>
+    <div class="cards" id="oneOut"></div>
+  </section>
+
+  <section>
+    <details>
+      <summary>質問定義（編集して再実行できます） / Python コード</summary>
+      <div class="twocol" style="margin-top:10px">
+        <div>
+          <div class="row" style="justify-content:space-between;margin-bottom:6px">
+            <span class="sub">questions（JSON）— 学習なしで質問を足すだけで判定項目が増える</span>
+            <button class="ghost" id="reset">元に戻す</button>
+          </div>
+          <textarea class="code" id="qjson" spellcheck="false"></textarea>
+          <div class="err" id="qerr"></div>
+        </div>
+        <div>
+          <div class="sub" style="margin-bottom:6px">同じことを SDK で書くと</div>
+          <pre id="pycode"></pre>
+        </div>
+      </div>
+    </details>
+  </section>
+</main>
+
+<script>
+const PRICE_PER_M = 0.042; // USD / 1M input tokens（ベンダー公表値）
+let CFG, key, results = null, lastWall = 0;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const pct = (x) => (x * 100).toFixed(0) + "%";
+const sc = () => CFG.scenarios[key];
+
+function questions() {
+  try { const q = JSON.parse($("qjson").value); $("qerr").textContent = ""; return q; }
+  catch (e) { $("qerr").textContent = "JSON エラー: " + e.message; return null; }
+}
+
+async function init() {
+  CFG = await (await fetch("/api/config")).json();
+  $("mode").textContent = CFG.live ? "LIVE · Jev API" : "OFFLINE · cache/mock";
+  $("mode").className = "badge " + (CFG.live ? "live" : "offline");
+  const keys = Object.keys(CFG.scenarios);
+  $("tabs").innerHTML = keys.map((k) => `<button data-k="${k}">${esc(CFG.scenarios[k].category)}：${esc(CFG.scenarios[k].title)}</button>`).join("");
+  $("tabs").onclick = (e) => { if (e.target.dataset.k) select(e.target.dataset.k); };
+  $("runAll").onclick = runAll;
+  $("runOne").onclick = runOne;
+  $("th").oninput = renderGate;
+  $("reset").onclick = () => { $("qjson").value = JSON.stringify(sc().questions, null, 2); renderPy(); };
+  $("qjson").oninput = renderPy;
+  select(location.hash.slice(1) in CFG.scenarios ? location.hash.slice(1) : keys[0]);
+}
+
+function select(k) {
+  key = k; results = null; location.hash = k;
+  document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.k === k));
+  const s = sc();
+  $("title").textContent = s.title; $("cat").textContent = s.category; $("lead").textContent = s.lead;
+  $("runAll").textContent = `全 ${s.records.length} 件を Jev で判定`;
+  $("qjson").value = JSON.stringify(s.questions, null, 2);
+  $("free").placeholder = k === "support_record"
+    ? "例：帰りの会で友だちとぶつかって転び、おでこを打った。保冷剤で冷やし、腫れは見られない。"
+    : "例：来年小学校に上がる娘がいます。放課後に通える場所があるか知りたく、一度見学に行けますか？";
+  $("gateSec").hidden = $("tableSec").hidden = true;
+  $("stats").innerHTML = ""; $("runInfo").textContent = ""; $("oneOut").innerHTML = ""; $("oneInfo").textContent = "";
+  renderPy();
+}
+
+async function post(path, body) {
+  const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const j = await r.json();
+  if (j.error) throw new Error(j.error);
+  return j;
+}
+
+async function runAll() {
+  const q = questions(); if (!q) return;
+  $("runAll").disabled = true; $("runInfo").textContent = "判定中…";
+  try {
+    const t0 = performance.now();
+    const j = await post("/api/batch", { scenario: key, questions: q });
+    results = j.results; lastWall = j.wall_ms;
+    $("runInfo").textContent = `ブラウザ計測 ${Math.round(performance.now() - t0)} ms`;
+    renderStats(); renderTable(); renderGate();
+    $("gateSec").hidden = $("tableSec").hidden = false;
+  } catch (e) { $("runInfo").textContent = "エラー: " + e.message; }
+  $("runAll").disabled = false;
+}
+
+function renderStats() {
+  const n = results.length;
+  const lat = results.map((r) => r.latency_ms);
+  const tokens = results.reduce((a, r) => a + (r.usage?.input_tokens || 0), 0);
+  const qn = Object.keys(results[0].answers).length;
+  const srcs = [...new Set(results.map((r) => r.source))].join(" / ");
+  const cost = tokens / 1e6 * PRICE_PER_M;
+  $("stats").innerHTML = [
+    ["判定した件数", `${n}<small>件 × ${qn}問</small>`],
+    ["全件の所要時間（並列）", `${lastWall}<small>ms</small>`],
+    ["1件あたりレイテンシ（中央値）", `${median(lat)}<small>ms</small>`],
+    ["入力トークン合計", `${tokens.toLocaleString()}`],
+    ["概算コスト", `$${cost.toFixed(5)}`],
+    ["1万件/日 換算", `$${(cost / n * 10000).toFixed(2)}<small>/日</small>`],
+    ["データソース", `<span style="font-size:14px">${esc(srcs)}</span>`],
+  ].map(([k, v]) => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
+}
+const median = (a) => { const s = [...a].sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
+
+// ---- gate ---------------------------------------------------------------
+function gateEval(th) {
+  const s = sc(), g = s.gate;
+  return results.map((r, i) => {
+    const exp = s.records[i].expect;
+    if (g.kind === "noul_any") {
+      const flagged = g.questions.some((q) => (r.answers[q]?.noul ?? 0) >= th);
+      const truth = g.questions.some((q) => exp[q] === true);
+      return { flagged, truth };
+    }
+    const a = r.answers[g.question];
+    const auto = a && a.confidence >= th;
+    return { auto, correct: a && a.choice === exp[g.question] };
+  });
+}
+
+function gateSummary(th) {
+  const ev = gateEval(th), n = ev.length;
+  if (sc().gate.kind === "noul_any") {
+    const flagged = ev.filter((e) => e.flagged).length;
+    const truth = ev.filter((e) => e.truth).length;
+    const missed = ev.filter((e) => e.truth && !e.flagged).length;
+    const over = ev.filter((e) => !e.truth && e.flagged).length;
+    return { ev, n, flagged, truth, missed, over };
+  }
+  const auto = ev.filter((e) => e.auto);
+  const wrong = auto.filter((e) => !e.correct).length;
+  return { ev, n, auto: auto.length, wrong, acc: auto.length ? (auto.length - wrong) / auto.length : 1 };
+}
+
+function renderGate() {
+  if (!results) return;
+  const th = +$("th").value, s = sc(), g = s.gate, m = gateSummary(th);
+  $("thVal").textContent = th.toFixed(2);
+  $("gateLabel").textContent = g.label; $("gateExplain").textContent = g.explain;
+  const tile = (k, v, cls = "") => `<div class="tile ${cls}"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+  $("gateTiles").innerHTML = g.kind === "noul_any"
+    ? tile("管理者が読む件数", `${m.flagged}<small>/ ${m.n}件</small>`)
+      + tile("本来要確認の件数", `${m.truth}<small>件</small>`)
+      + tile("見逃し", `${m.missed}<small>件</small>`, m.missed ? "warn" : "ok")
+      + tile("過検知", `${m.over}<small>件</small>`)
+    : tile("自動振り分け率", pct(m.auto / m.n), "ok")
+      + tile("自動分の正解率", pct(m.acc), m.wrong ? "warn" : "ok")
+      + tile("人が振り分ける件数", `${m.n - m.auto}<small>件</small>`)
+      + tile("誤振り分け", `${m.wrong}<small>件</small>`, m.wrong ? "warn" : "ok");
+  // table row state
+  document.querySelectorAll("#tbl tbody tr").forEach((tr, i) => {
+    const e = m.ev[i], st = tr.querySelector(".status");
+    if (g.kind === "noul_any") {
+      tr.className = e.flagged ? "flag" : "";
+      st.className = "status " + (e.flagged ? "flag" : "human");
+      st.textContent = e.flagged ? "管理者確認" : "担当者のみ";
+    } else {
+      tr.className = e.auto ? "auto" : "";
+      st.className = "status " + (e.auto ? "auto" : "human");
+      st.textContent = e.auto ? "自動" : "人が判断";
+    }
+  });
+  drawCurve(th);
+}
+
+function drawCurve(th) {
+  const g = sc().gate, W = 420, H = 220, L = 34, R = 10, T = 14, B = 30;
+  const xs = [...Array(91)].map((_, i) => 0.05 + i * 0.01);
+  const pts = xs.map((x) => [x, gateSummary(x)]);
+  const n = results.length;
+  const series = g.kind === "noul_any"
+    ? [["管理者が読む件数", (m) => m.flagged / n, "var(--accent)"], ["見逃し件数", (m) => m.missed / n, "var(--warn)"]]
+    : [["自動振り分け率", (m) => m.auto / n, "var(--ok)"], ["自動分の正解率", (m) => m.acc, "var(--accent)"]];
+  const X = (x) => L + (x - 0.05) / 0.9 * (W - L - R), Y = (y) => T + (1 - y) * (H - T - B);
+  let svg = "";
+  for (const y of [0, 0.5, 1]) svg += `<line x1="${L}" x2="${W - R}" y1="${Y(y)}" y2="${Y(y)}" stroke="var(--line)"/><text x="${L - 4}" y="${Y(y) + 3}" text-anchor="end">${g.kind === "noul_any" ? Math.round(y * n) + "件" : pct(y)}</text>`;
+  for (const x of [0.1, 0.3, 0.5, 0.7, 0.9]) svg += `<text x="${X(x)}" y="${H - B + 14}" text-anchor="middle">${x.toFixed(1)}</text>`;
+  svg += `<text x="${(L + W - R) / 2}" y="${H - 2}" text-anchor="middle">しきい値</text>`;
+  series.forEach(([name, f, color], si) => {
+    const d = pts.map(([x, m], i) => `${i ? "L" : "M"}${X(x).toFixed(1)},${Y(f(m)).toFixed(1)}`).join("");
+    svg += `<path d="${d}" fill="none" stroke="${color}" stroke-width="2"/>`;
+    svg += `<rect x="${L + 8 + si * 150}" y="${T - 10}" width="10" height="3" fill="${color}"/><text x="${L + 22 + si * 150}" y="${T - 6}">${name}</text>`;
+  });
+  svg += `<line x1="${X(th)}" x2="${X(th)}" y1="${T}" y2="${H - B}" stroke="var(--ink)" stroke-dasharray="3 3"/>`;
+  $("curve").innerHTML = svg;
+}
+
+// ---- table --------------------------------------------------------------
+function cell(name, a, exp) {
+  if (!a) return `<td class="cell">—</td>`;
+  const miss = exp !== undefined && !matches(a, exp) ? ` <span class="miss" title="想定: ${esc(exp)}">✗</span>` : "";
+  if (a.type === "choice")
+    return `<td class="cell"><span class="lbl">${esc(a.choice)}</span>${miss}<div class="meter"><i style="width:${pct(a.confidence)}"></i></div><span class="num">conf ${a.confidence.toFixed(2)}</span></td>`;
+  if (a.type === "noul")
+    return `<td class="cell"><span class="lbl">${pct(a.noul)}</span>${miss}<div class="meter ${a.noul >= 0.5 ? "hot" : ""}"><i style="width:${pct(a.noul)}"></i></div></td>`;
+  const max = Object.keys(a.legend).length - 1;
+  const top = Object.entries(a.probabilities).sort((x, y) => y[1] - x[1])[0][0];
+  return `<td class="cell" title="${esc(a.legend[top])}"><span class="lbl">${a.score.toFixed(1)}</span><span class="num"> / ${max}</span>${miss}<div class="meter"><i style="width:${pct(a.score / (max || 1))}"></i></div><span class="num">${esc(a.legend[top]).slice(0, 10)}</span></td>`;
+}
+function matches(a, exp) {
+  if (a.type === "choice") return a.choice === exp;
+  if (a.type === "noul") return (a.noul >= 0.5) === exp;
+  return Math.round(a.score) === exp;
+}
+
+function renderTable() {
+  const s = sc(), names = Object.keys(results[0].answers);
+  const head = `<thead><tr><th>ID</th><th>扱い</th><th>本文</th>${names.map((n) => `<th title="${esc(qInstr(n))}">${esc(n)}</th>`).join("")}<th>ms</th></tr></thead>`;
+  const body = results.map((r, i) => {
+    const rec = s.records[i];
+    return `<tr><td>${rec.id}</td><td><span class="status"></span></td><td class="text">${esc(rec.text)}</td>${names.map((n) => cell(n, r.answers[n], rec.expect[n])).join("")}<td class="num">${r.latency_ms} <span class="src ${r.source}">${r.source}</span>${r.error ? `<div class="miss" title="${esc(r.error)}">API失敗</div>` : ""}</td></tr>`;
+  }).join("");
+  $("tbl").innerHTML = head + "<tbody>" + body + "</tbody>";
+}
+const qInstr = (n) => (questions() || {})[n]?.instructions || "";
+
+// ---- single -------------------------------------------------------------
+async function runOne() {
+  const q = questions(), text = $("free").value.trim() || $("free").placeholder.replace(/^例：/, "");
+  if (!q) return;
+  $("runOne").disabled = true; $("oneInfo").textContent = "判定中…";
+  try {
+    const r = (await post("/api/judge", { scenario: key, questions: q, text })).results[0];
+    $("oneInfo").innerHTML = `${r.latency_ms} ms · 入力 ${r.usage?.input_tokens ?? "?"} tokens · <span class="src ${r.source}">${r.source}</span>${r.error ? ` <span class="miss">${esc(r.error)}</span>` : ""}`;
+    $("oneOut").innerHTML = Object.entries(r.answers).map(([n, a]) => card(n, a, q[n])).join("");
+  } catch (e) { $("oneInfo").textContent = "エラー: " + e.message; }
+  $("runOne").disabled = false;
+}
+
+function card(n, a, q) {
+  const title = `<div class="q">${esc(n)} — ${esc(q?.instructions || "")}</div>`;
+  if (a.type === "noul")
+    return `<div class="card">${title}<div class="a" style="color:${a.noul >= 0.5 ? "var(--warn)" : "inherit"}">${a.noul >= 0.5 ? "Yes" : "No"} <span class="num">p(yes)=${a.noul.toFixed(2)}</span></div><div class="meter ${a.noul >= 0.5 ? "hot" : ""}"><i style="width:${pct(a.noul)}"></i></div></div>`;
+  const probs = Object.entries(a.probabilities).sort((x, y) => y[1] - x[1]);
+  const label = (k) => a.type === "score" ? `${k}: ${a.legend[k]}` : k;
+  const head = a.type === "choice" ? esc(a.choice) : `${a.score.toFixed(2)} <span class="num">/ ${Object.keys(a.legend).length - 1}</span>`;
+  return `<div class="card">${title}<div class="a">${head} <span class="num">conf ${a.confidence.toFixed(2)}</span></div><div class="probs">${probs.map(([k, p]) => `<div><span>${esc(label(k))}</span><div class="meter"><i style="width:${pct(p)}"></i></div><span class="num">${pct(p)}</span></div>`).join("")}</div></div>`;
+}
+
+// ---- python view --------------------------------------------------------
+function renderPy() {
+  const q = questions(); if (!q) return;
+  const s = sc();
+  const py = (v, ind) => JSON.stringify(v, null, 4).replace(/\n/g, "\n" + ind).replace(/\bnull\b/g, "None").replace(/\btrue\b/g, "True").replace(/\bfalse\b/g, "False");
+  const ctor = { choice: "Choice", score: "Score", noul: "Noul" };
+  const lines = Object.entries(q).map(([n, d]) => {
+    const args = [];
+    if (d.instructions) args.push(`instructions=${JSON.stringify(d.instructions)}`);
+    if (d.criteria) args.push(`criteria=${py(d.criteria, "            ")}`);
+    return `        "${n}": ${ctor[d.type] || "dict"}(\n            ${args.join(",\n            ")},\n        ),`;
+  });
+  $("pycode").textContent =
+`from typesafe_sdk import Choice, Noul, Score, TypeSafeClient
+
+with TypeSafeClient() as client:  # TYPESAFE_API_KEY を読む
+    res = client.system_one(
+        state={"${s.state_key}": text, **${py(s.state_extra, "        ")}},
+        questions={
+${lines.join("\n")}
+        },
+    )
+
+# 1回の呼び出しで全問の答えが確率付きで返る
+res.choices["…"].choice, res.choices["…"].confidence, res.choices["…"].probabilities
+res.nouls["…"].noul          # p(yes) 0〜1
+res.scores["…"].score        # 確率加重の期待スコア`;
+}
+
+init();
+</script>
+</body>
+</html>
