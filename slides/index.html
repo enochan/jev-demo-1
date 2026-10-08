@@ -308,22 +308,6 @@
   </div>
 </section>
 
-<section class="s">
-  <h2>Appendix：デモの動かし方</h2>
-<pre><code><span class="c"># Windows PowerShell（&amp;&amp; は使えないため1行ずつ実行）</span>
-git clone https://github.com/enochan/jev-demo-1
-cd jev-demo-1
-py -m pip install -r requirements.txt
-$env:TYPESAFE_API_KEY = "..."           <span class="c"># console.typesafe.ai で発行</span>
-py demo\server.py                       <span class="c"># → http://localhost:8000（mode=LIVE と表示）</span>
-
-<span class="c"># 他の人に共有する（Cloudflare Tunnel、アカウント不要）</span>
-$env:DEMO_PASSWORD = "合言葉"           <span class="c"># 公開時は必須。Basic 認証がかかる</span>
-cloudflared tunnel --url http://localhost:8000   <span class="c"># 別タブで実行 → https://xxxx.trycloudflare.com</span>
-
-<span class="c"># キーなし・ネットワーク不調時：LIVE の結果は demo/cache/ から再生、なければ mock で動作</span></code></pre>
-  <p class="sub" style="font-size:18px;margin-top:16px">質問定義：demo/scenarios.json ／ サーバー：demo/server.py（標準ライブラリ + typesafe-sdk）<br>自分で試すなら：scenarios.json にシナリオを1つ追加すると、画面にタブが増える（macOS / Linux は export・python3 に読み替え）</p>
-</section>
 
 </div>
 <div class="foot" id="pg" style="position:fixed;color:#9aa5b8;font:14px system-ui"></div>
