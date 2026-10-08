@@ -33,11 +33,14 @@ def live_enabled() -> bool:
 # ---------------------------------------------------------------- Jev 呼び出し
 
 
-def build_state(scenario: dict, text: str) -> dict:
-    return {scenario["state_key"]: text, **scenario.get("state_extra", {})}
+def build_state(scenario: dict, item: str | dict) -> dict:
+    """item は本文（文字列）か、そのまま state にする JSON（構造化データ・ランキング）。"""
+    if isinstance(item, dict):
+        return {**scenario.get("state_extra", {}), **item}
+    return {scenario["state_key"]: item, **scenario.get("state_extra", {})}
 
 
-async def call_jev(client, scenario: dict, questions: dict, text: str) -> dict:
+async def call_jev(client, scenario: dict, questions: dict, text: str | dict) -> dict:
     started = time.perf_counter()
     response = await client.system_one(state=build_state(scenario, text), questions=questions)
     latency_ms = (time.perf_counter() - started) * 1000
@@ -49,7 +52,7 @@ async def call_jev(client, scenario: dict, questions: dict, text: str) -> dict:
     }
 
 
-async def judge_many(scenario: dict, questions: dict, texts: list[str]) -> list[dict]:
+async def judge_many(scenario: dict, questions: dict, texts: list[str | dict]) -> list[dict]:
     """texts を並列で判定する。LIVE 失敗時は cache → mock にフォールバック。"""
     results: list[dict | None] = [None] * len(texts)
     pending = []
@@ -85,21 +88,21 @@ async def judge_many(scenario: dict, questions: dict, texts: list[str]) -> list[
 # ---------------------------------------------------------------- キャッシュ
 
 
-def cache_key(questions: dict, text: str) -> str:
+def cache_key(questions: dict, text: str | dict) -> str:
     raw = json.dumps({"q": questions, "t": text}, ensure_ascii=False, sort_keys=True)
     return hashlib.sha256(raw.encode()).hexdigest()[:24]
 
 
-def cache_put(questions: dict, text: str, result: dict) -> None:
+def cache_put(questions: dict, text: str | dict, result: dict) -> None:
     (CACHE_DIR / f"{cache_key(questions, text)}.json").write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
-def cache_get(questions: dict, text: str) -> dict | None:
+def cache_get(questions: dict, text: str | dict) -> dict | None:
     path = CACHE_DIR / f"{cache_key(questions, text)}.json"
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
 
 
-def offline_answer(scenario: dict, questions: dict, text: str) -> dict:
+def offline_answer(scenario: dict, questions: dict, text: str | dict) -> dict:
     cached = cache_get(questions, text)
     if cached:
         cached["source"] = "cache"
@@ -120,6 +123,10 @@ MOCK_HINTS = {
     "injection": ["無視", "忘れて", "システムプロンプト", "開発者モード", "制限のない"],
     "pii": ["電話番号", "090-", "080-", "住所", "手帳の番号"],
     "medical": ["薬", "診断", "処方", "飲む量"],
+    "health": ["眠れ", "疲れ", "体調", "起きるのがつらい", "通院"],
+    "workload": ["業務が増え", "残業", "担当業務"],
+    "relation": ["声をかけにくい", "上司", "同僚", "言い方がきつい"],
+    "accommodation": ["配慮", "メモで"],
 }
 CHOICE_HINTS = {
     "健康・生活": ["発熱", "食事", "トイレ", "着替え", "服", "薬", "睡眠"],
@@ -138,9 +145,14 @@ CHOICE_HINTS = {
     "企業": ["当社", "社員", "御社の支援"],
     "対象内": ["仕事", "職場", "就職", "求人", "面接", "就労", "働"],
     "対象外": ["レシピ", "天気", "ゲーム"],
+    "様子見": ["慣れて"],
+    "本人と再面談": ["眠れ", "つらい"],
+    "企業と三者面談": ["配慮", "業務が増え", "上司", "残業"],
+    "医療・支援機関と連携": ["通院", "主治医"],
 }
 SCORE_HINTS = {
     "condition": [(3, ["パニック", "うずくま"]), (2, ["発熱", "噛", "個別対応"]), (1, ["泣", "あざ", "硬"])],
+    "quit_risk": [(3, ["自信がない", "辞めたい"]), (2, ["眠れ", "配慮"]), (1, ["残業", "疲れ"])],
     "distress": [(2, ["消えて", "しんどく", "つらい", "情けなく"]), (1, ["迷って", "眠れない", "困って"])],
     "urgency": [(2,["至急", "今日", "すぐ", "荒れて"]), (1, ["空き状況", "改善", "来月", "話をしたい"])],
 }
@@ -174,13 +186,31 @@ def _score(criteria: list, level: int, conf: float) -> dict:
     }
 
 
-def mock_answer(scenario: dict, questions: dict, text: str) -> dict:
-    record = next((r for r in scenario["records"] if r["text"] == text), None)
+def _ranking_fit(scenario: dict, item) -> dict:
+    """ランキングのモック：プリセットの求職者・子どもなら用意した適合度を使う。"""
+    if scenario.get("mode") != "ranking" or not isinstance(item, dict):
+        return {}
+    preset = next((p for p in scenario["presets"] if p["text"] == item.get(scenario["query_key"])), None)
+    if not preset:
+        return {}
+    return {f"c_{c['id']}": c["fit"][preset["id"]] for c in scenario["candidates"]}
+
+
+def mock_answer(scenario: dict, questions: dict, item: str | dict) -> dict:
+    record = next((r for r in scenario.get("records", []) if r.get("state", r.get("text")) == item), None)
     expect = record["expect"] if record else {}
     ambiguous = bool(record and record.get("ambiguous"))
+    fits = _ranking_fit(scenario, item)
+    text = item if isinstance(item, str) else json.dumps(item, ensure_ascii=False)
     answers = {}
     for name, q in questions.items():
         seed = f"{name}:{text}"
+        if name in fits:
+            answers[name] = _noul(min(0.99, max(0.01, fits[name] + _jitter(seed, -0.05, 0.05))))
+            continue
+        if name.startswith("c_") and q.get("type") == "noul" and scenario.get("mode") == "ranking":
+            answers[name] = _noul(_jitter(seed, 0.05, 0.6))
+            continue
         conf = _jitter(seed, 0.48, 0.66) if ambiguous else _jitter(seed, 0.86, 0.97)
         kind = q.get("type")
         if kind == "noul":
@@ -249,9 +279,9 @@ class Handler(BaseHTTPRequestHandler):
             scenario = SCENARIOS[body["scenario"]]
             questions = body.get("questions") or scenario["questions"]
             if self.path == "/api/judge":
-                texts = [body["text"]]
+                texts = [body["item"] if "item" in body else body["text"]]
             elif self.path == "/api/batch":
-                texts = [r["text"] for r in scenario["records"]]
+                texts = [r.get("state", r.get("text")) for r in scenario["records"]]
             else:
                 return self._send(404, b"not found", "text/plain")
             started = time.perf_counter()
